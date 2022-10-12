@@ -64,8 +64,8 @@ void si7021_i2c_open(I2C_TypeDef *i2c)
   // set route locations and enable pins
   app_i2c_open.scl_loc0 = I2C0_SCL_ROUTE15;
   app_i2c_open.sda_loc0 = I2C0_SDA_ROUTE15;
-  app_i2c_open.scl_pen |= I2C0_SCL_PEN;
-  app_i2c_open.sda_pen |= I2C0_SDA_PEN;
+  app_i2c_open.scl_pen = I2C0_SCL_PEN;
+  app_i2c_open.sda_pen = I2C0_SDA_PEN;
 
   // open I2C peripheral
   i2c_open(i2c, &app_i2c_open);
