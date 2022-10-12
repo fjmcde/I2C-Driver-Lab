@@ -1,26 +1,30 @@
-//***********************************************************************************
-// Include files
-//***********************************************************************************
+//*******************************************************
+// header guards
+//*******************************************************
 #ifndef	LETIMER_HG
 #define	LETIMER_HG
 
-/* System include statements */
+
+//***********************************************************************************
+// include files
+//***********************************************************************************
+// system included files
 
 
-/* Silicon Labs include statements */
+// Silicon Labs included files
 #include "em_letimer.h"
 #include "em_gpio.h"
 #include "em_cmu.h"
 #include "em_assert.h"
 
 
-/* The developer's include statements */
+// developer included files
 #include "scheduler.h"
 #include "sleep_routines.h"
 
 
 //***********************************************************************************
-// defined files
+// defined macros
 //***********************************************************************************
 #define LETIMER_HZ		      1000			          // utilizing ULFRCO oscillator for LETIMERs
 #define LETIMER_EM          EM4                 // use ULFRCO, block energy mode 4
@@ -28,8 +32,14 @@
 
 
 //***********************************************************************************
-// global variables
+// enums
 //***********************************************************************************
+
+
+//***********************************************************************************
+// structs
+//***********************************************************************************
+// app specific letimer struct for PWM mode
 typedef struct {
 	bool 			  debugRun;			        // True = keep LETIMER running will halted
 	bool 			  enable;				        // enable the LETIMER upon completion of open
@@ -53,5 +63,6 @@ typedef struct {
 //***********************************************************************************
 void letimer_pwm_open(LETIMER_TypeDef *letimer, APP_LETIMER_PWM_TypeDef *app_letimer_struct);
 void letimer_start(LETIMER_TypeDef *letimer, bool enable);
+
 
 #endif

@@ -1,27 +1,32 @@
-//***********************************************************************************
-// Include files
-//***********************************************************************************
+//*******************************************************
+// header guards
+//*******************************************************
 #ifndef APP_HG
 #define APP_HG
 
-/* System include statements */
+
+//***********************************************************************************
+// include files
+//***********************************************************************************
+// system included files
 
 
-/* Silicon Labs include statements */
+// silicon Labs included files
 #include "em_cmu.h"
 #include "em_assert.h"
 
-/* The developer's include statements */
+// developer included files
 #include "cmu.h"
 #include "gpio.h"
 #include "letimer.h"
 #include "brd_config.h"
 #include "scheduler.h"
 #include "sleep_routines.h"
+#include "si7021.h"
 
 
 //***********************************************************************************
-// defined files
+// defined macros
 //***********************************************************************************
 #define PWM_PER             3.0                       // PWM period in seconds
 #define PWM_ACT_PER         0.25                      // PWM active period in seconds
@@ -33,17 +38,19 @@
 
 
 //***********************************************************************************
-// global variables
+// enums
 //***********************************************************************************
 
+
+//***********************************************************************************
+// structs
+//***********************************************************************************
 
 
 //***********************************************************************************
 // function prototypes
 //***********************************************************************************
 void app_peripheral_setup(void);
-
-// scheduled peripheral call backs
 void scheduled_letimer0_uf_cb(void);
 void scheduled_letimer0_comp0_cb(void);
 void scheduled_letimer0_comp1_cb(void);

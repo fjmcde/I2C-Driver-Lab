@@ -1,30 +1,22 @@
 //*******************************************************
 // header guards
 //*******************************************************
-#ifndef MAIN_HG
-#define MAIN_HG
+#ifndef HW_DELAY_HG
+#define HW_DELAY_HG
 
 
 //***********************************************************************************
 // included files
 //***********************************************************************************
 // system included files
-#include <stdint.h>
-#include <stdbool.h>
-#include <stdio.h>
 
 
 // Silicon Labs included files
-#include "em_device.h"
-#include "em_chip.h"
-#include "em_emu.h"
-#include "em_assert.h"
-#include "brd_config.h"
+#include "em_timer.h"
+#include "em_cmu.h"
 
 
-// developer included files
-#include "app.h"
-#include "scheduler.h"
+// developer includes files
 
 
 //***********************************************************************************
@@ -45,6 +37,7 @@
 //***********************************************************************************
 // function prototypes
 //***********************************************************************************
+void timer_delay(uint32_t ms_delay);
 
 
 #endif

@@ -11,40 +11,34 @@
  ******************************************************************************/
 
 //***********************************************************************************
-// Include files
+// included header file
 //***********************************************************************************
 #include "cmu.h"
 
-//***********************************************************************************
-// defined files
-//***********************************************************************************
-
 
 //***********************************************************************************
-// Private variables
+// static/private data
 //***********************************************************************************
 
 
 //***********************************************************************************
-// Private functions
+// static/private functions
 //***********************************************************************************
 
 
 //***********************************************************************************
-// Global functions
+// function definitions
 //***********************************************************************************
-
-
 /***************************************************************************//**
  * @brief
  *   Routes clock tree to LETIMER0 and enables the proper oscillators
  *
  * @details
  *   Enabled:
- *   - Low-energy clock divided down from HFCLK (CORELE)
+ *   - High-frequency peripheral clock (HFPER) for use with I2C0 peripheral
+ *   - Low-energy clock divided down from HFCLK (CORELE) for use with LETIMER0
  *
  *   Disabled:
- *   - High-frequency peripheral clock (HFPER)
  *   - Low Frequency Resistor Capacitor Oscillator (LFRCO)
  *   - Low Frequency Crystal Oscillator (LFXO)
  *
@@ -56,24 +50,23 @@
  *
  * @note
  *   No requirement to enable the ULFRCO oscillator.
- *   It is always enabled in EM0-4H
+ *   It is always enabled in EM0-EM4
  *
  ******************************************************************************/
 void cmu_open(void){
 
-    // Disable High-frequency peripheral clock
-    CMU_ClockEnable(cmuClock_HFPER, false);
+    // enable High-frequency peripheral clock (AN0004 Table 2.1)
+    CMU_ClockEnable(cmuClock_HFPER, true);
 
-    // By default, Low Frequency Resistor Capacitor Oscillator, LFRCO, is enabled,
-    // Disable the LFRCO oscillator
+    // by default, LFRCO, is enabled; disable the LFRCO oscillator
     CMU_OscillatorEnable(cmuOsc_LFRCO, false, false);
 
-    // Disable the Low Frequency Crystal Oscillator, LFXO
+    // disable the Low Frequency Crystal Oscillator, LFXO
     CMU_OscillatorEnable(cmuOsc_LFXO, false, false);
 
-    // Route LFA clock to LETIMER0 clock tree
+    // route LFA clock to LETIMER0 clock tree
     CMU_ClockSelectSet(cmuClock_LFA, cmuSelect_ULFRCO);
 
-    // Now, you must ensure that the global Low Frequency is enabled
+    // enable global low frequency clock
     CMU_ClockEnable(cmuClock_CORELE, true);
 }

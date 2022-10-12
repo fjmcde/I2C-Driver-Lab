@@ -6,50 +6,50 @@
  * @date
  *   9/18/2022
  * @brief
- *   GPIO source file for driving the output to LED0 and LED1
+ *   GPIO source file for driving GPIO peripherals
  ******************************************************************************/
 
 //***********************************************************************************
-// Include files
+// included header file
 //***********************************************************************************
 #include "gpio.h"
 
 
 //***********************************************************************************
-// defined files
-//***********************************************************************************
-
-
-//***********************************************************************************
-// static/private variables
+// static/private data
 //***********************************************************************************
 static uint32_t gpio_odd_irq_cb;
 static uint32_t gpio_even_irq_cb;
 
 
 //***********************************************************************************
-// Private functions
+// static/private functions
 //***********************************************************************************
 
 
 //***********************************************************************************
-// Global functions
+// function definitions
 //***********************************************************************************
-
-
 /***************************************************************************//**
  * @brief
- *   Driver to open the GPIO peripheral
+ *   Driver to open the GPIO peripheral.
  *
  * @details
- *   Enables the GPIO for use with the buttons and LEDs. Enables GPIO clock,
- *   clears all interrupt flags, enables interrupts and enable the NVIC for
- *   the peripheral.
+ *   Enables the GPIO for use with the buttons LEDs, and Si7021 Temperature &
+ *   humidity sensor. Enables GPIO clock, clears all interrupt flags, enables
+ *   interrupts and enables the NVIC for the peripherals.
  ******************************************************************************/
 void gpio_open(void){
 
   // enable clock
   CMU_ClockEnable(cmuClock_GPIO, true);
+
+  // configure Si7021
+  GPIO_DriveStrengthSet(SI7021_SENSOR_EN_PORT, SI7021_DRIVE_STRENGTH);
+  GPIO_PinModeSet(SI7021_SENSOR_EN_PORT, SI7021_SENSOR_EN_PIN,
+                  SI7021_SENSOR_CONFIG, SI7021_DEFAULT_1);
+  GPIO_PinModeSet(SI7021_SCL_PORT, SI7021_SCL_PIN, SI7021_WIREDAND, SI7021_DEFAULT_1);
+  GPIO_PinModeSet(SI7021_SDA_PORT, SI7021_SDA_PIN, SI7021_WIREDAND, SI7021_DEFAULT_1);
 
   // configure LEDs
   GPIO_DriveStrengthSet(LED0_PORT, LED0_DRIVE_STRENGTH);

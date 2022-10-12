@@ -1,35 +1,29 @@
 //*******************************************************
 // header guards
 //*******************************************************
-#ifndef MAIN_HG
-#define MAIN_HG
+#ifndef SI7021_HG
+#define SI7021_HG
 
 
 //***********************************************************************************
 // included files
 //***********************************************************************************
 // system included files
-#include <stdint.h>
-#include <stdbool.h>
-#include <stdio.h>
 
 
 // Silicon Labs included files
-#include "em_device.h"
-#include "em_chip.h"
-#include "em_emu.h"
-#include "em_assert.h"
-#include "brd_config.h"
 
 
 // developer included files
-#include "app.h"
-#include "scheduler.h"
+#include "i2c.h"
+#include "HW_delay.h"
 
 
 //***********************************************************************************
 // defined macros
 //***********************************************************************************
+#define DELAY80MS       80  // 80ms delay for [worst case] timer delay (DS Table 2 (cont.) pg 5)
+#define REFFREQ         0   // Set to zero to use I2C frequency
 
 
 //***********************************************************************************
@@ -45,6 +39,7 @@
 //***********************************************************************************
 // function prototypes
 //***********************************************************************************
+void si7021_i2c_open(I2C_TypeDef *i2c);
 
 
 #endif

@@ -16,7 +16,7 @@
 
 
 //***********************************************************************************
-// defined files
+// defined macros
 //***********************************************************************************
 #define DEASSERT            0x00     // de-assert PWM idle values
 #define COMP0               0x00     // compare0 compare value
@@ -25,22 +25,23 @@
 #define REP1                0x01     // repeat1 set value
 #define REP_PWM_MODE        0x01     // repeat set PWM mode
 
+
 //***********************************************************************************
-// Private variables
+// static/private data
 //***********************************************************************************
 static uint32_t scheduled_comp0_cb;   // scheduled compare0 call back
 static uint32_t scheduled_comp1_cb;   // scheduled compare1 callback
 static uint32_t scheduled_uf_cb;      // scheduled underflow callback
 
+
 //***********************************************************************************
-// Private functions
+// static/private functions
 //***********************************************************************************
 
 
 //***********************************************************************************
-// Global functions
+// function definitions
 //***********************************************************************************
-
 /***************************************************************************//**
  * @brief
  *   Driver to open and set an LETIMER peripheral in PWM mode

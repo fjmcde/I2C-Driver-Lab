@@ -32,26 +32,27 @@
  * arising from your use of this Software.
  *
 **************************************************************************/
-
 //*******************************************************
 // header guards
 //*******************************************************
-#ifndef SLEEP_ROUTINES_H_
-#define SLEEP_ROUTINES_H_
+#ifndef SLEEP_ROUTINES_HG
+#define SLEEP_ROUTINES_HG
 
 //*******************************************************
 // included files
 //*******************************************************
-//** Standard Libraries
+// system included files
 #include <string.h>
 #include <stdio.h>
 
-//** Silicon Lab include files
+
+// Silicon Labs included files
 #include "em_emu.h"
 #include "em_core.h"
 #include "em_assert.h"
 
-//** User/developer include files
+
+// developer included files
 
 
 //*******************************************************
@@ -66,6 +67,16 @@
 
 
 //*******************************************************
+// enums
+//*******************************************************
+
+
+//*******************************************************
+// structs
+//*******************************************************
+
+
+//*******************************************************
 // function prototypes
 //*******************************************************
 void sleep_open(void);
@@ -74,4 +85,5 @@ void sleep_unblock_mode(uint32_t EM);
 void enter_sleep(void);
 uint32_t current_block_energy_mode(void);
 
-#endif /* SLEEP_ROUTINES_H_ */
+
+#endif

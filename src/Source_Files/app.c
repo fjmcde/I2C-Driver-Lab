@@ -10,7 +10,7 @@
  ******************************************************************************/
 
 //***********************************************************************************
-// Include files
+// included header file
 //***********************************************************************************
 #include "app.h"
 
@@ -21,37 +21,35 @@
 
 
 //***********************************************************************************
-// Static / Private Variables
+// static/private data
 //***********************************************************************************
 
 
 //***********************************************************************************
-// Private functions
+// static/private functions
 //***********************************************************************************
-
-static void app_letimer_pwm_open(float period, float act_period, uint32_t out0_route, uint32_t out1_route);
+static void app_letimer_pwm_open(float period, float act_period,
+                                 uint32_t out0_route, uint32_t out1_route);
 
 //***********************************************************************************
-// Global functions
+// function definitions
 //***********************************************************************************
-
 /***************************************************************************//**
  * @brief
  *   Sets up the application-specific peripherals, schedulers, and timers
  *
  * @details
- *   Opens the CMU, GPIO, interrupt scheduler, and application specific LETIMER
- *   in PWM mode, then starts the LETIMER to begin counting.
+ *   Opens all application specific peripherals
  ******************************************************************************/
 void app_peripheral_setup(void){
   cmu_open();
   gpio_open();
+  si7021_i2c_open(I2C0);
   scheduler_open();
   sleep_open();
   app_letimer_pwm_open(PWM_PER, PWM_ACT_PER, PWM_ROUTE_0, PWM_ROUTE_1);
   letimer_start(LETIMER0, true);
 }
-
 
 
 /***************************************************************************//**
@@ -99,10 +97,6 @@ void app_letimer_pwm_open(float period, float act_period, uint32_t out0_route, u
   letimer_pwm_open(LETIMER0, &letimer_pwm);
 }
 
-
-//***********************************************************************************
-// app scheduler service routines
-//***********************************************************************************
 
 /***************************************************************************//**
  * @brief
@@ -216,12 +210,15 @@ void scheduled_gpio_even_irq_cb(void)
   // unblock current energy mode
   sleep_unblock_mode(current_block_em);
 
+  // if current block energy mode is > EM0 ...
   if(current_block_em > EM0)
   {
+      // ... decrement the current block
       sleep_block_mode(--current_block_em);
   }
   else
   {
+      // ... else block EM4
       sleep_block_mode(EM4);
   }
 }
