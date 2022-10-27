@@ -186,15 +186,13 @@ void i2c_open(I2C_TypeDef *i2c, I2C_OPEN_STRUCT *app_i2c_open)
  * @param[in] app_i2c_open
  *  All data required to open the I2C peripheral encapsulated in struct
  ******************************************************************************/
-void i2c_start(I2C_TypeDef *i2c, I2C_STATE_MACHINE_STRUCT *i2c_sm,
-               uint32_t slave_addr, uint32_t r_w, uint32_t *read_result)
-
+void i2c_start(I2C_TypeDef *i2c, uint32_t slave_addr, uint32_t r_w, uint32_t *read_result)
 {
   // if starting the I2C0 peripheral ...
   if(i2c == I2C0)
   {
       // halt until bus is ready
-      while(i2c0_sm->busy);
+      while(i2c0_sm.busy);
 
       // will trigger if a previous I2C operation has not completed
       EFM_ASSERT((I2C0->STATE & _I2C_STATE_STATE_MASK) == I2C_STATE_STATE_IDLE);
@@ -203,16 +201,16 @@ void i2c_start(I2C_TypeDef *i2c, I2C_STATE_MACHINE_STRUCT *i2c_sm,
       sleep_block_mode(I2C_EM_BLOCK);
 
       // set busy bit
-      i2c0_sm->busy = I2C_BUS_BUSY;
+      i2c0_sm.busy = I2C_BUS_BUSY;
 
       // initialize static I2C0 state machine
-      i2c0_sm->I2Cn = i2c;
-      i2c0_sm->curr_state = req_res;
-      i2c0_sm->slave_addr = slave_addr;
-      i2c0_sm->r_w = r_w;
-      *i2c0_sm->rxdata = I2C0->RXDATA;
-      *i2c0_sm->txdata = I2C0->TXDATA;
-      i2c0_sm->data = read_result;
+      i2c0_sm.I2Cn = i2c;
+      i2c0_sm.curr_state = req_res;
+      i2c0_sm.slave_addr = slave_addr;
+      i2c0_sm.r_w = r_w;
+      *i2c0_sm.rxdata = I2C0->RXDATA;
+      *i2c0_sm.txdata = I2C0->TXDATA;
+      i2c0_sm.data = read_result;
 
       // enable interrupts
       I2C0->IEN |= SI7021_I2C_IEN_MASK;

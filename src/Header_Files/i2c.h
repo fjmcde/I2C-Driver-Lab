@@ -92,7 +92,6 @@ typedef struct
 // function prototypes
 //***********************************************************************************
 void i2c_open(I2C_TypeDef *i2c, I2C_OPEN_STRUCT *app_i2c_struct);
-void i2c_start(I2C_TypeDef *i2c, I2C_STATE_MACHINE_STRUCT *i2c_sm,
-               uint32_t slave_addr, uint32_t r_w, uint32_t *read_result);
+void i2c_start(I2C_TypeDef *i2c, uint32_t slave_addr, uint32_t r_w, uint32_t *read_result);
 
 #endif
