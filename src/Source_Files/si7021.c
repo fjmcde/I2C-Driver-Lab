@@ -18,7 +18,7 @@
 //***********************************************************************************
 // static/private data
 //***********************************************************************************
-
+static uint32_t *read_result;
 
 //***********************************************************************************
 // static/private functions
@@ -40,7 +40,7 @@
  ******************************************************************************/
 void si7021_i2c_open(I2C_TypeDef *i2c)
 {
-  // instantiate an app specific I2C struct
+  // instantiate an app specific I2C
   I2C_OPEN_STRUCT app_i2c_open;
 
   // set a local delay
@@ -69,4 +69,13 @@ void si7021_i2c_open(I2C_TypeDef *i2c)
 
   // open I2C peripheral
   i2c_open(i2c, &app_i2c_open);
+
+  // start the I2C protocol (READ RH)
+  i2c_start(i2c, SI7021_ADDR, SI7021_I2C_WRITE, read_result);
+}
+
+
+void si7021_i2c_read()
+{
+
 }

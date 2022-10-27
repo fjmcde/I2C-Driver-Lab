@@ -136,7 +136,7 @@ void letimer_pwm_open(LETIMER_TypeDef *letimer, APP_LETIMER_PWM_TypeDef *app_let
 	// enable underflow interrupts
 	letimer->IEN |= _LETIMER_IEN_UF_MASK;
 
-	/* Configure scheduled callbacks*/
+	/* Configure scheduled callbacks */
 	scheduled_comp0_cb = app_letimer_struct->comp0_cb;
 	scheduled_comp1_cb = app_letimer_struct->comp1_cb;
 	scheduled_uf_cb = app_letimer_struct->uf_cb;

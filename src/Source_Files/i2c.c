@@ -18,13 +18,15 @@
 //***********************************************************************************
 // static/private data
 //***********************************************************************************
-
+static I2C_STATE_MACHINE_STRUCT i2c0_sm;
+static I2C_STATE_MACHINE_STRUCT i2c1_sm;
 
 //***********************************************************************************
 // static/private functions
 //***********************************************************************************
 static void i2c_bus_reset(I2C_TypeDef *i2c);
-
+static void i2c0_state_machine(void);
+static void i2c1_state_machine(void);
 
 //***********************************************************************************
 // function definitions
@@ -160,4 +162,85 @@ void i2c_open(I2C_TypeDef *i2c, I2C_OPEN_STRUCT *app_i2c_open)
   // enable pin route
   i2c->ROUTEPEN |= app_i2c_open->sda_pen;
   i2c->ROUTEPEN |= app_i2c_open->scl_pen;
+}
+
+
+void i2c_start(I2C_TypeDef *i2c, uint32_t slave_addr, uint32_t r_w, uint32_t *read_result)
+{
+  // if starting the I2C0 peripheral ...
+  if(i2c == I2C0)
+  {
+      // halt until bus is ready
+      while(i2c0_sm.busy);
+
+      // will trigger if a previous I2C operation has not completed
+      EFM_ASSERT((I2C0->STATE & _I2C_STATE_STATE_MASK) == I2C_STATE_STATE_IDLE);
+
+      // The I2C peripheral cannot cannot go below EM2
+      sleep_block_mode(I2C_EM_BLOCK);
+
+      // set busy bit
+      i2c0_sm.busy = I2C_BUS_BUSY;
+
+      // initialize static I2C0 state machine
+      i2c0_sm.I2Cn = i2c;
+      i2c0_sm.curr_state = req_res;
+      i2c0_sm.slave_addr = slave_addr;
+      i2c0_sm.r_w = r_w;
+      *i2c0_sm.rxdata = I2C0->RXDATA;
+      *i2c0_sm.txdata = I2C0->TXDATA;
+
+      // start I2C0 peripheral
+      I2C0->CMD |= I2C_CMD_START;
+  }
+
+  // if starting the I2C1 peripheral ...
+  if(i2c == I2C1)
+  {
+      // halt until bus is ready
+      while(i2c1_sm.busy);
+
+      // will trigger if a previous I2C operation has not completed
+      EFM_ASSERT((I2C1->STATE & _I2C_STATE_STATE_MASK) == I2C_STATE_STATE_IDLE);
+
+      // The I2C peripheral cannot cannot go below EM2
+      sleep_block_mode(I2C_EM_BLOCK);
+
+      // set busy bit
+      i2c1_sm.busy = I2C_BUS_BUSY;
+
+
+      // initialize static I2C1 state machine
+      i2c1_sm.I2Cn = i2c;
+      i2c1_sm.curr_state = req_res;
+      i2c1_sm.slave_addr = slave_addr;
+      i2c0_sm.r_w = r_w;
+      *i2c1_sm.rxdata = I2C1->RXDATA;
+      *i2c1_sm.txdata = I2C1->TXDATA;
+
+      // start I2C1 peripheral
+      I2C1->CMD |= I2C_CMD_START;
+  }
+  
+  
+}
+
+void I2C0_IRQHandler(void)
+{
+
+}
+
+void I2C1_IRQHandler(void)
+{
+
+}
+
+void i2c0_state_machine(void)
+{
+
+}
+
+void i2c1_state_machine(void)
+{
+
 }
