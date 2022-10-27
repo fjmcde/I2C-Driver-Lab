@@ -25,8 +25,10 @@ static I2C_STATE_MACHINE_STRUCT i2c1_sm;
 // static/private functions
 //***********************************************************************************
 static void i2c_bus_reset(I2C_TypeDef *i2c);
-static void i2c0_state_machine(void);
-static void i2c1_state_machine(void);
+static void i2cn_ack_sm(I2C_STATE_MACHINE_STRUCT *i2c_sm);
+static void i2cn_nack_sm(I2C_STATE_MACHINE_STRUCT *i2c_sm);
+static void i2cn_rxdata_sm(I2C_STATE_MACHINE_STRUCT *i2c_sm);
+static void i2cn_mstop_sm(I2C_STATE_MACHINE_STRUCT *i2c_sm);
 
 //***********************************************************************************
 // function definitions
@@ -165,13 +167,34 @@ void i2c_open(I2C_TypeDef *i2c, I2C_OPEN_STRUCT *app_i2c_open)
 }
 
 
-void i2c_start(I2C_TypeDef *i2c, uint32_t slave_addr, uint32_t r_w, uint32_t *read_result)
+/***************************************************************************//**
+ * @brief
+ *  Start the I2C peripheral.
+ *
+ * @details
+ *
+ *
+ * @param[in] i2c
+ *  Pointer to desired I2Cn peripheral (either I2C0 or I2C1)
+ *
+ * @param[in] slave_addr
+ *  Address for the slave device
+ *
+ *  @param[in] r_w
+ *   Bit to perform either a read or a write
+ *
+ * @param[in] app_i2c_open
+ *  All data required to open the I2C peripheral encapsulated in struct
+ ******************************************************************************/
+void i2c_start(I2C_TypeDef *i2c, I2C_STATE_MACHINE_STRUCT *i2c_sm,
+               uint32_t slave_addr, uint32_t r_w, uint32_t *read_result)
+
 {
   // if starting the I2C0 peripheral ...
   if(i2c == I2C0)
   {
       // halt until bus is ready
-      while(i2c0_sm.busy);
+      while(i2c0_sm->busy);
 
       // will trigger if a previous I2C operation has not completed
       EFM_ASSERT((I2C0->STATE & _I2C_STATE_STATE_MASK) == I2C_STATE_STATE_IDLE);
@@ -180,18 +203,26 @@ void i2c_start(I2C_TypeDef *i2c, uint32_t slave_addr, uint32_t r_w, uint32_t *re
       sleep_block_mode(I2C_EM_BLOCK);
 
       // set busy bit
-      i2c0_sm.busy = I2C_BUS_BUSY;
+      i2c0_sm->busy = I2C_BUS_BUSY;
 
       // initialize static I2C0 state machine
-      i2c0_sm.I2Cn = i2c;
-      i2c0_sm.curr_state = req_res;
-      i2c0_sm.slave_addr = slave_addr;
-      i2c0_sm.r_w = r_w;
-      *i2c0_sm.rxdata = I2C0->RXDATA;
-      *i2c0_sm.txdata = I2C0->TXDATA;
+      i2c0_sm->I2Cn = i2c;
+      i2c0_sm->curr_state = req_res;
+      i2c0_sm->slave_addr = slave_addr;
+      i2c0_sm->r_w = r_w;
+      *i2c0_sm->rxdata = I2C0->RXDATA;
+      *i2c0_sm->txdata = I2C0->TXDATA;
+      i2c0_sm->data = read_result;
+
+      // enable interrupts
+      I2C0->IEN |= SI7021_I2C_IEN_MASK;
+      NVIC_EnableIRQ(I2C0_IRQn);
 
       // start I2C0 peripheral
       I2C0->CMD |= I2C_CMD_START;
+
+      // send slave addr + write bit
+      *i2c1_sm.txdata = (i2c1_sm.slave_addr | r_w);
   }
 
   // if starting the I2C1 peripheral ...
@@ -214,33 +245,195 @@ void i2c_start(I2C_TypeDef *i2c, uint32_t slave_addr, uint32_t r_w, uint32_t *re
       i2c1_sm.I2Cn = i2c;
       i2c1_sm.curr_state = req_res;
       i2c1_sm.slave_addr = slave_addr;
-      i2c0_sm.r_w = r_w;
+      i2c1_sm.r_w = r_w;
       *i2c1_sm.rxdata = I2C1->RXDATA;
       *i2c1_sm.txdata = I2C1->TXDATA;
 
+      // enable interrupts
+      I2C0->IEN |= SI7021_I2C_IEN_MASK;
+      NVIC_EnableIRQ(I2C1_IRQn);
+
       // start I2C1 peripheral
       I2C1->CMD |= I2C_CMD_START;
+
+      // send slave addr + write bit
+      *i2c1_sm.txdata = (i2c1_sm.slave_addr | r_w);
   }
-  
-  
 }
 
 void I2C0_IRQHandler(void)
 {
+  // save flags that are both enabled and raised
+  uint32_t intflags = (I2C0->IF & I2C0->IEN);
 
+  // lower flags
+  I2C0->IFC &= ~_I2C_IFC_MASK;
+
+  // handle ACK
+  if(intflags & I2C_IF_ACK)
+    {
+      i2cn_ack_sm(&i2c0_sm);
+    }
+
+  // handle NACK
+  if(intflags & I2C_IF_NACK)
+  {
+      i2cn_nack_sm(&i2c0_sm);
+  }
+
+  // handle RXDATA
+  if(intflags & I2C_IF_RXDATAV)
+  {
+      i2cn_rxdata_sm(&i2c0_sm);
+  }
+
+  // handle MSTOP
+  if(intflags & I2C_IF_MSTOP)
+  {
+      i2cn_mstop_sm(&i2c0_sm);
+  }
 }
 
 void I2C1_IRQHandler(void)
 {
+  // save flags that are both enabled and raised
+    uint32_t intflags = (I2C1->IF & I2C1->IEN);
+
+    // lower flags
+    I2C1->IFC &= ~_I2C_IFC_MASK;
+
+    // handle ACK
+    if(intflags & I2C_IF_ACK)
+      {
+        i2cn_ack_sm(&i2c1_sm);
+      }
+
+    // handle NACK
+    if(intflags & I2C_IF_NACK)
+    {
+        i2cn_nack_sm(&i2c1_sm);
+    }
+
+    // handle RXDATA
+    if(intflags & I2C_IF_RXDATAV)
+    {
+        i2cn_rxdata_sm(&i2c1_sm);
+    }
+
+    // handle MSTOP
+    if(intflags & I2C_IF_MSTOP)
+    {
+        i2cn_mstop_sm(&i2c1_sm);
+    }
+}
+
+void i2cn_ack_sm(I2C_STATE_MACHINE_STRUCT *i2c_sm)
+{
+  switch(i2c_sm->curr_state)
+  {
+    case req_res:
+      // change state
+      i2c_sm->curr_state = command_tx;
+
+      // send command to measure relative humidity (no hold master mode)
+      *i2c_sm->txdata = (measure_RH_NHMM);
+      break;
+    case command_tx:
+      // change state
+      i2c_sm->curr_state = data_req;
+
+      // send repeated start command
+      i2c_sm->I2Cn->CMD |= I2C_CMD_START;
+
+      // send slave addr + read bit
+      *i2c_sm->txdata = (i2c_sm->slave_addr | SI7021_I2C_READ);
+      break;
+    case data_req:
+      // change state
+      i2c_sm->curr_state = data_rx;
+      break;
+    default:
+      EFM_ASSERT(false);
+  }
+}
+
+void i2cn_nack_sm(I2C_STATE_MACHINE_STRUCT *i2c_sm)
+{
+  switch(i2c_sm->curr_state)
+  {
+    case req_res:
+      // send repeated start command
+      i2c_sm->I2Cn->CMD |= I2C_CMD_START;
+
+      // re-send slave addr + write bit
+      *i2c_sm->txdata = (i2c_sm->slave_addr | SI7021_I2C_WRITE);
+      break;
+    case command_tx:
+      // send CONT command
+      i2c_sm->I2Cn->CMD |= I2C_CMD_CONT;
+
+      // re-send command to measure relative humidity (no hold master mode)
+      *i2c_sm->txdata = (measure_RH_NHMM);
+      break;
+    case data_req:
+      // re-send repeated start command
+      i2c_sm->I2Cn->CMD |= I2C_CMD_START;
+
+      // re-send slave addr + read bit
+      *i2c_sm->txdata = (i2c_sm->slave_addr | SI7021_I2C_READ);
+      break;
+    default:
+      EFM_ASSERT(false);
+  }
+}
+
+void i2cn_rxdata_sm(I2C_STATE_MACHINE_STRUCT *i2c_sm)
+{
+  switch(i2c_sm->curr_state)
+  {
+    case data_rx:
+      // decrement num_bytes counter
+      i2c_sm->num_bytes--;
+
+      // retrieve read data, but left shift that data n number of bytes remaining
+      *i2c_sm->data |= (*i2c_sm->rxdata << (MSBYTE_SHIFT * i2c_sm->num_bytes));
+
+      // check if more data is expected ...
+      if(i2c_sm->num_bytes > 0)
+      {
+          // send ACK
+          i2c_sm->I2Cn->CMD |= I2C_CMD_ACK;
+      }
+      else
+      {
+          // send NACK
+          i2c_sm->I2Cn->CMD |= I2C_CMD_NACK;
+
+          // change state
+          i2c_sm->curr_state = m_stop;
+
+          //send STOP
+          i2c_sm->I2Cn->CMD |= I2C_CMD_STOP;
+      }
+
+      break;
+    default:
+      EFM_ASSERT(false);
+      break;
+  }
 
 }
 
-void i2c0_state_machine(void)
+void i2cn_mstop_sm(I2C_STATE_MACHINE_STRUCT *i2c_sm)
 {
-
-}
-
-void i2c1_state_machine(void)
-{
-
+  switch(i2c_sm->curr_state)
+  {
+    case m_stop:
+      i2c_sm->busy = I2C_BUS_READY;
+      sleep_block_mode(I2C_EM_BLOCK);
+      add_scheduled_event(SI7021_READ_CB);
+      break;
+    default:
+      EFM_ASSERT(false);
+  }
 }

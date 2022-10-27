@@ -27,6 +27,8 @@
 #define SI7021_ADDR            0x40     // Si7021 peripheral device address
 #define SI7021_I2C_READ        0X01     // READ BIT = 1; Si7021 TRM 5.1
 #define SI7021_I2C_WRITE       0X00     // WRITE BIT = 1; Si7021 TRM 5.1
+#define SI7021_I2C_IEN_MASK    0x1E0    // Enable ACK, NACK, RXDATAV and MSTOP interrupt flags
+
 
 //***********************************************************************************
 // enums

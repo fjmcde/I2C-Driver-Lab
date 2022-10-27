@@ -11,15 +11,15 @@
 // system included files
 #include <stdbool.h>
 
-
 // Silicon Labs included files
 #include "em_i2c.h"
 #include "em_assert.h"
 
-
 // developer included files
 #include "cmu.h"
 #include "sleep_routines.h"
+#include "si7021.h"
+#include "app.h"
 
 
 //***********************************************************************************
@@ -36,6 +36,8 @@
 // I2Cn State Machine Bus Busy [busy]
 #define I2C_BUS_READY     (0x0UL << 0)                // Clear when bus is available
 #define I2C_BUS_BUSY      (0x1UL << 0)                // Set when bus is busy
+// I2C data bytes [data]
+#define MSBYTE_SHIFT      0X08                        // Left shift a byte in data register to accept another byte as LSB
 // I2C Energy Modes
 #define I2C_EM_BLOCK      EM2                         // I2C Cannot go below EM2
 
@@ -44,11 +46,11 @@
 //***********************************************************************************
 typedef enum
 {
-  req_res,          /* Request resource: Transmit START bit, 7-bit slave addr + r/w-bit (TRM 16.3.7.6: 0x57) */
-  command_tx,       /* Transmit command to device (TRM 16.3.7.6: 0x93)*/
+  req_res,          /* Request resource: Send 7-bit slave addr + r/w-bit (TRM 16.3.7.6: 0x57) */
+  command_tx,       /* Transmit command to device (TRM 16.3.7.6: 0x97)*/
+  data_req,         /* Send data request  (TRM 16.3.7.6: 0xD7) */
   data_rx,          /* Data received (TRM 16.3.7.6)*/
-  m_stop_tx,        /* STOP bit sent */
-  end_proc          /* m_stop bit received; end process */
+  m_stop,           /* STOP bit sent */
 }I2C_MACHINE_STATES_Typedef;
 
 //***********************************************************************************
@@ -80,7 +82,7 @@ typedef struct
     bool                          busy;                   // True when bus is busy; False when bus is available
     uint32_t                     *rxdata;                 // pointer to receive buffer address
     uint32_t                     *txdata;                 // pointer to transmit buffer address
-    uint32_t                      data;                   // store state machine received/transmit data
+    uint32_t                     *data;                   // store state machine received/transmit data
     uint32_t                      num_bytes;              // number of bytes expected
     uint32_t                      i2c_cb;                 // I2C call back event to request upon completion of I2C operation
 }I2C_STATE_MACHINE_STRUCT;
@@ -90,6 +92,7 @@ typedef struct
 // function prototypes
 //***********************************************************************************
 void i2c_open(I2C_TypeDef *i2c, I2C_OPEN_STRUCT *app_i2c_struct);
-void i2c_start(I2C_TypeDef *i2c, uint32_t slave_addr, uint32_t r_w, uint32_t *read_result);
+void i2c_start(I2C_TypeDef *i2c, I2C_STATE_MACHINE_STRUCT *i2c_sm,
+               uint32_t slave_addr, uint32_t r_w, uint32_t *read_result);
 
 #endif

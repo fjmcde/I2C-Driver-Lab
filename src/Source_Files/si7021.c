@@ -75,7 +75,7 @@ void si7021_i2c_open(I2C_TypeDef *i2c)
 }
 
 
-void si7021_i2c_read()
+void si7021_i2c_read(void)
 {
 
 }
