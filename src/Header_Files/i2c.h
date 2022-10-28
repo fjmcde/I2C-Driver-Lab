@@ -34,10 +34,13 @@
 #define I2C_FREQ          I2C_FREQ_FAST_MAX           // Max I2C frequency is 4kHz (EFM32PG12 DS 4.1.20.2 & Si7021-A20 DS Table 3)
 #define I2C_CLHR_6_3      i2cClockHLRAsymetric        // IC2 CLHR 6:3 (TRM 16.5.1 & EFM32PG12 HAL I2C_ClockHLR_TypeDef enumeration)
 // I2Cn State Machine Bus Busy [busy]
-#define I2C_BUS_READY     (0x0UL << 0)                // Clear when bus is available
-#define I2C_BUS_BUSY      (0x1UL << 0)                // Set when bus is busy
+#define I2C_BUS_READY     false                       // Clear when bus is available
+#define I2C_BUS_BUSY      true                        // Set when bus is busy
+// I2C State Machine transit buffer [txdata]
+#define I2C_ADDR_RW_SHIFT 1                           // Left shift addr before or'ing r/w bit
 // I2C data bytes [data]
 #define MSBYTE_SHIFT      0X08                        // Left shift a byte in data register to accept another byte as LSB
+#define READ_2_BYTES      2                           // number of bytes expected for a read
 // I2C Energy Modes
 #define I2C_EM_BLOCK      EM2                         // I2C Cannot go below EM2
 
@@ -78,10 +81,11 @@ typedef struct
     I2C_TypeDef                  *I2Cn;                   // pointer to I2C peripheral (I2C0 or I2C1)
     I2C_MACHINE_STATES_Typedef    curr_state;             // tracks the current state of the state machine
     uint32_t                      slave_addr;             // pointer to the address of slave device currently being communicated with
+    volatile uint32_t             tx_cmd;                 // transmit command register
     uint32_t                      r_w;                    // set read/write bit
     bool                          busy;                   // True when bus is busy; False when bus is available
-    uint32_t                     *rxdata;                 // pointer to receive buffer address
-    uint32_t                     *txdata;                 // pointer to transmit buffer address
+    volatile const uint32_t      *rxdata;                 // pointer to receiver buffer address
+    volatile uint32_t            *txdata;                 // pointer to transmit buffer address
     uint32_t                     *data;                   // store state machine received/transmit data
     uint32_t                      num_bytes;              // number of bytes expected
     uint32_t                      i2c_cb;                 // I2C call back event to request upon completion of I2C operation

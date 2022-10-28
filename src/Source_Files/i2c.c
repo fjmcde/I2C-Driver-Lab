@@ -18,17 +18,17 @@
 //***********************************************************************************
 // static/private data
 //***********************************************************************************
-static I2C_STATE_MACHINE_STRUCT i2c0_sm;
-static I2C_STATE_MACHINE_STRUCT i2c1_sm;
+static volatile I2C_STATE_MACHINE_STRUCT i2c0_sm;
+static volatile I2C_STATE_MACHINE_STRUCT i2c1_sm;
 
 //***********************************************************************************
 // static/private functions
 //***********************************************************************************
 static void i2c_bus_reset(I2C_TypeDef *i2c);
-static void i2cn_ack_sm(I2C_STATE_MACHINE_STRUCT *i2c_sm);
-static void i2cn_nack_sm(I2C_STATE_MACHINE_STRUCT *i2c_sm);
-static void i2cn_rxdata_sm(I2C_STATE_MACHINE_STRUCT *i2c_sm);
-static void i2cn_mstop_sm(I2C_STATE_MACHINE_STRUCT *i2c_sm);
+static void i2cn_ack_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm);
+static void i2cn_nack_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm);
+static void i2cn_rxdata_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm);
+static void i2cn_mstop_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm);
 
 //***********************************************************************************
 // function definitions
@@ -208,19 +208,21 @@ void i2c_start(I2C_TypeDef *i2c, uint32_t slave_addr, uint32_t r_w, uint32_t *re
       i2c0_sm.curr_state = req_res;
       i2c0_sm.slave_addr = slave_addr;
       i2c0_sm.r_w = r_w;
-      *i2c0_sm.rxdata = I2C0->RXDATA;
-      *i2c0_sm.txdata = I2C0->TXDATA;
+      i2c0_sm.num_bytes = READ_2_BYTES;
+      i2c0_sm.rxdata = &i2c0_sm.I2Cn->RXDATA;
+      i2c0_sm.txdata = &i2c0_sm.I2Cn->TXDATA;
       i2c0_sm.data = read_result;
 
       // enable interrupts
-      I2C0->IEN |= SI7021_I2C_IEN_MASK;
+      i2c0_sm.I2Cn->IEN |= SI7021_I2C_IEN_MASK;
       NVIC_EnableIRQ(I2C0_IRQn);
 
       // start I2C0 peripheral
-      I2C0->CMD |= I2C_CMD_START;
+      i2c0_sm.I2Cn->CMD |= I2C_CMD_START;
 
       // send slave addr + write bit
-      *i2c1_sm.txdata = (i2c1_sm.slave_addr | r_w);
+      i2c0_sm.tx_cmd = (slave_addr << I2C_ADDR_RW_SHIFT) | r_w;
+      *i2c0_sm.txdata = i2c0_sm.tx_cmd;
   }
 
   // if starting the I2C1 peripheral ...
@@ -244,18 +246,20 @@ void i2c_start(I2C_TypeDef *i2c, uint32_t slave_addr, uint32_t r_w, uint32_t *re
       i2c1_sm.curr_state = req_res;
       i2c1_sm.slave_addr = slave_addr;
       i2c1_sm.r_w = r_w;
-      *i2c1_sm.rxdata = I2C1->RXDATA;
-      *i2c1_sm.txdata = I2C1->TXDATA;
+      i2c1_sm.rxdata = &i2c1_sm.I2Cn->RXDATA;
+      i2c1_sm.txdata = &i2c1_sm.I2Cn->TXDATA;
+      i2c1_sm.data = read_result;
 
       // enable interrupts
-      I2C0->IEN |= SI7021_I2C_IEN_MASK;
+      i2c1_sm.I2Cn->IEN |= SI7021_I2C_IEN_MASK;
       NVIC_EnableIRQ(I2C1_IRQn);
 
       // start I2C1 peripheral
-      I2C1->CMD |= I2C_CMD_START;
+      i2c1_sm.I2Cn->CMD |= I2C_CMD_START;
 
       // send slave addr + write bit
-      *i2c1_sm.txdata = (i2c1_sm.slave_addr | r_w);
+      i2c1_sm.tx_cmd = (slave_addr << I2C_ADDR_RW_SHIFT) | r_w;
+      *i2c1_sm.txdata = i2c1_sm.tx_cmd;
   }
 }
 
@@ -325,7 +329,7 @@ void I2C1_IRQHandler(void)
     }
 }
 
-void i2cn_ack_sm(I2C_STATE_MACHINE_STRUCT *i2c_sm)
+void i2cn_ack_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
 {
   switch(i2c_sm->curr_state)
   {
@@ -355,7 +359,7 @@ void i2cn_ack_sm(I2C_STATE_MACHINE_STRUCT *i2c_sm)
   }
 }
 
-void i2cn_nack_sm(I2C_STATE_MACHINE_STRUCT *i2c_sm)
+void i2cn_nack_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
 {
   switch(i2c_sm->curr_state)
   {
@@ -385,7 +389,7 @@ void i2cn_nack_sm(I2C_STATE_MACHINE_STRUCT *i2c_sm)
   }
 }
 
-void i2cn_rxdata_sm(I2C_STATE_MACHINE_STRUCT *i2c_sm)
+void i2cn_rxdata_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
 {
   switch(i2c_sm->curr_state)
   {
@@ -422,7 +426,7 @@ void i2cn_rxdata_sm(I2C_STATE_MACHINE_STRUCT *i2c_sm)
 
 }
 
-void i2cn_mstop_sm(I2C_STATE_MACHINE_STRUCT *i2c_sm)
+void i2cn_mstop_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
 {
   switch(i2c_sm->curr_state)
   {
