@@ -186,7 +186,7 @@ void i2c_open(I2C_TypeDef *i2c, I2C_OPEN_STRUCT *app_i2c_open)
  * @param[in] app_i2c_open
  *  All data required to open the I2C peripheral encapsulated in struct
  ******************************************************************************/
-void i2c_start(I2C_TypeDef *i2c, uint32_t slave_addr, uint32_t r_w, uint32_t *read_result)
+void i2c_start(I2C_TypeDef *i2c, uint32_t slave_addr, uint32_t r_w, volatile uint16_t *read_result)
 {
   // if starting the I2C0 peripheral ...
   if(i2c == I2C0)
@@ -221,7 +221,7 @@ void i2c_start(I2C_TypeDef *i2c, uint32_t slave_addr, uint32_t r_w, uint32_t *re
       i2c0_sm.I2Cn->CMD |= I2C_CMD_START;
 
       // send slave addr + write bit
-      i2c0_sm.tx_cmd = (slave_addr << I2C_ADDR_RW_SHIFT) | r_w;
+      i2c0_sm.tx_cmd = (slave_addr << I2C_ADDR_RW_SHIFT) | i2c0_sm.r_w;
       *i2c0_sm.txdata = i2c0_sm.tx_cmd;
   }
 
@@ -258,7 +258,7 @@ void i2c_start(I2C_TypeDef *i2c, uint32_t slave_addr, uint32_t r_w, uint32_t *re
       i2c1_sm.I2Cn->CMD |= I2C_CMD_START;
 
       // send slave addr + write bit
-      i2c1_sm.tx_cmd = (slave_addr << I2C_ADDR_RW_SHIFT) | r_w;
+      i2c1_sm.tx_cmd = (slave_addr << I2C_ADDR_RW_SHIFT) | i2c0_sm.r_w;
       *i2c1_sm.txdata = i2c1_sm.tx_cmd;
   }
 }
@@ -269,7 +269,7 @@ void I2C0_IRQHandler(void)
   uint32_t intflags = (I2C0->IF & I2C0->IEN);
 
   // lower flags
-  I2C0->IFC &= ~_I2C_IFC_MASK;
+  I2C0->IFC |= _I2C_IFC_MASK;
 
   // handle ACK
   if(intflags & I2C_IF_ACK)
@@ -302,13 +302,13 @@ void I2C1_IRQHandler(void)
     uint32_t intflags = (I2C1->IF & I2C1->IEN);
 
     // lower flags
-    I2C1->IFC &= ~_I2C_IFC_MASK;
+    I2C1->IFC |= _I2C_IFC_MASK;
 
     // handle ACK
     if(intflags & I2C_IF_ACK)
-      {
-        i2cn_ack_sm(&i2c1_sm);
-      }
+    {
+      i2cn_ack_sm(&i2c1_sm);
+    }
 
     // handle NACK
     if(intflags & I2C_IF_NACK)
@@ -331,6 +331,9 @@ void I2C1_IRQHandler(void)
 
 void i2cn_ack_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
 {
+  // lower ACK interrupt flag
+  i2c_sm->I2Cn->IFC |= I2C_IFC_ACK;
+
   switch(i2c_sm->curr_state)
   {
     case req_res:
@@ -348,7 +351,7 @@ void i2cn_ack_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
       i2c_sm->I2Cn->CMD |= I2C_CMD_START;
 
       // send slave addr + read bit
-      *i2c_sm->txdata = (i2c_sm->slave_addr | SI7021_I2C_READ);
+      *i2c_sm->txdata = ((i2c_sm->slave_addr << I2C_ADDR_RW_SHIFT) | SI7021_I2C_READ);
       break;
     case data_req:
       // change state
@@ -356,11 +359,15 @@ void i2cn_ack_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
       break;
     default:
       EFM_ASSERT(false);
+      break;
   }
 }
 
 void i2cn_nack_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
 {
+  // lower NACK interrupt flag
+  i2c_sm->I2Cn->IFC |= I2C_IFC_NACK;
+
   switch(i2c_sm->curr_state)
   {
     case req_res:
@@ -428,6 +435,9 @@ void i2cn_rxdata_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
 
 void i2cn_mstop_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
 {
+  // clear MSTOP interrupt flag register
+  i2c_sm->I2Cn->IFC |= I2C_IFC_MSTOP;
+
   switch(i2c_sm->curr_state)
   {
     case m_stop:

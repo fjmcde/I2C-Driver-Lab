@@ -18,7 +18,7 @@
 //***********************************************************************************
 // static/private data
 //***********************************************************************************
-static uint32_t *read_result;
+static volatile uint16_t read_result;
 
 //***********************************************************************************
 // static/private functions
@@ -71,7 +71,7 @@ void si7021_i2c_open(I2C_TypeDef *i2c)
   i2c_open(i2c, &app_i2c_open);
 
   // start the I2C protocol (READ RH)
-  i2c_start(i2c, SI7021_ADDR, SI7021_I2C_WRITE, read_result);
+  i2c_start(i2c, SI7021_ADDR, SI7021_I2C_WRITE, &read_result);
 }
 
 

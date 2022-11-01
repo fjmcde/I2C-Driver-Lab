@@ -86,7 +86,7 @@ typedef struct
     bool                          busy;                   // True when bus is busy; False when bus is available
     volatile const uint32_t      *rxdata;                 // pointer to receiver buffer address
     volatile uint32_t            *txdata;                 // pointer to transmit buffer address
-    uint32_t                     *data;                   // store state machine received/transmit data
+    volatile uint16_t            *data;                   // store state machine received/transmit data
     uint32_t                      num_bytes;              // number of bytes expected
     uint32_t                      i2c_cb;                 // I2C call back event to request upon completion of I2C operation
 }I2C_STATE_MACHINE_STRUCT;
@@ -96,6 +96,6 @@ typedef struct
 // function prototypes
 //***********************************************************************************
 void i2c_open(I2C_TypeDef *i2c, I2C_OPEN_STRUCT *app_i2c_struct);
-void i2c_start(I2C_TypeDef *i2c, uint32_t slave_addr, uint32_t r_w, uint32_t *read_result);
+void i2c_start(I2C_TypeDef *i2c, uint32_t slave_addr, uint32_t r_w, volatile uint16_t *read_result);
 
 #endif
