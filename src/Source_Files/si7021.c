@@ -4,9 +4,9 @@
  * @author
  *   Frank McDermott
  * @date
- *   10/11/2022
+ *   11/06/2022
  * @brief
- *   Contains all of the Si7021 driver functions
+ *   Si7021 Driver
  ******************************************************************************/
 
 //***********************************************************************************
@@ -72,12 +72,22 @@ void si7021_i2c_open(I2C_TypeDef *i2c)
 
   // open I2C peripheral
   i2c_open(i2c, &app_i2c_open);
-
-  // ADDED HERE TO DEBUG; SHOULD BE CALLED FROM EITHER READ OR WRITE FUNCTION
-  i2c_start(i2c, SI7021_ADDR, SI7021_I2C_WRITE, &read_result, SI7021_HUM_READ_CB);
 }
 
 
+/***************************************************************************//**
+ * @brief
+ *  Sends a read command to the Si7021 over I2C
+ *
+ * @details
+ *  Currently hard coded to read Relative Humidity (No Hold Master Mode)
+ *
+ * @param[in] i2c
+ *  Desired I2Cn peripheral (either I2C0 or I2C1)
+ *
+ * @param[in] si7021_cb
+ *  Callback event to be scheduled after read operation is complete
+ ******************************************************************************/
 void si7021_i2c_read(I2C_TypeDef *i2c, uint32_t si7021_cb)
 {
   // start the I2C protocol (READ RH)
@@ -85,14 +95,35 @@ void si7021_i2c_read(I2C_TypeDef *i2c, uint32_t si7021_cb)
 }
 
 
+/***************************************************************************//**
+ * @brief
+ *  Sends a read write to the Si7021 over I2C
+ *
+ * @details
+ *  NOT YET WORKING
+ *
+ * @param[in] i2c
+ *  Desired I2Cn peripheral (either I2C0 or I2C1)
+ *
+ * @param[in] si7021_cb
+ *  Callback event to be scheduled after write operation is complete
+ ******************************************************************************/
 void si7021_i2c_write(I2C_TypeDef *i2c, uint32_t si7021_cb)
 {
-  // start the I2C protocol (READ RH)
+  // start the I2C protocol (W)
   i2c_start(i2c, SI7021_ADDR, SI7021_I2C_READ, &write_value, si7021_cb);
 
 }
 
 
+/***************************************************************************//**
+ * @brief
+ *  Converts a Relative Humidity measurement code to a percent humidity
+ *  per Si7021-A20 TRM: Section 5.1.1
+ *
+ * @details
+ *  Atomic function due to accessing static variable
+ ******************************************************************************/
 float si7021_calc_RH(void)
 {
   // make atomic by disallowing interrupts

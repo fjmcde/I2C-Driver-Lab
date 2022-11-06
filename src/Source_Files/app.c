@@ -45,11 +45,11 @@ void app_peripheral_setup(void){
   cmu_open();
   gpio_open();
   sleep_open();
-  //si7021_i2c_read(I2C0, SI7021_HUM_READ_CB);
   scheduler_open();
   app_letimer_pwm_open(PWM_PER, PWM_ACT_PER, PWM_ROUTE_0, PWM_ROUTE_1);
   letimer_start(LETIMER0, true);
   si7021_i2c_open(I2C0);
+  si7021_i2c_read(I2C0, SI7021_HUM_READ_CB);
 }
 
 

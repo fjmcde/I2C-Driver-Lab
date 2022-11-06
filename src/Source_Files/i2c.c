@@ -100,7 +100,7 @@ void i2c_bus_reset(I2C_TypeDef *i2c)
  *
  * @details
  *  Enables the proper I2Cn CMU clock, sets the START bit, initializes
- *  I2C, and routes & enables the I2C to the proper pin.
+ *  I2C, routes & enables the I2C to the proper pin, and resets the I2C bus.
  *
  * @param[in] i2c
  *  Desired I2Cn peripheral (either I2C0 or I2C1)
@@ -176,7 +176,8 @@ void i2c_open(I2C_TypeDef *i2c, I2C_OPEN_STRUCT *app_i2c_open)
  *  Start the I2C peripheral.
  *
  * @details
- *
+ *  Initializes the I2C state machine and sends the start command. Can be
+ *  used with either I2C0 or I2C1.
  *
  * @param[in] i2c
  *  Pointer to desired I2Cn peripheral (either I2C0 or I2C1)
@@ -230,12 +231,11 @@ void i2c_start(I2C_TypeDef *i2c, uint32_t slave_addr, uint32_t r_w,
       // start I2C0 peripheral
       i2c0_sm.I2Cn->CMD = I2C_CMD_START;
 
+
+      // TODO: MOVE TO APPLICATION LAYER?
       // send slave addr + write bit
       i2c0_sm.tx_cmd = (slave_addr << I2C_ADDR_RW_SHIFT) | i2c0_sm.r_w;
       *i2c0_sm.txdata = i2c0_sm.tx_cmd;
-
-
-      for(int i = 0; i < 250000; i++);
   }
 
   // if starting the I2C1 peripheral ...
@@ -267,15 +267,27 @@ void i2c_start(I2C_TypeDef *i2c, uint32_t slave_addr, uint32_t r_w,
       // start I2C1 peripheral
       i2c1_sm.I2Cn->CMD = I2C_CMD_START;
 
+      // TODO: MOVE TO APPLICATION LAYER?
       // send slave addr + write bit
-      i2c1_sm.tx_cmd = (slave_addr << I2C_ADDR_RW_SHIFT) | r_w;
+      i2c1_sm.tx_cmd = (slave_addr << I2C_ADDR_RW_SHIFT) | i2c1_sm.r_w;
       *i2c1_sm.txdata = i2c1_sm.tx_cmd;
   }
+
+  // 80ms timer delay to ensure RWM sync
+  timer_delay(I2C_80MS_DELAY);
 
   // exit core critical to allow interrupts
   CORE_EXIT_CRITICAL();
 }
 
+
+/***************************************************************************//**
+ * @brief
+ *  I2C0 peripheral IRQ Handler
+ *
+ * @details
+ *  Handles ACK, NACK, RXDATAV, and MSTOP interrupts
+ ******************************************************************************/
 void I2C0_IRQHandler(void)
 {
   // save flags that are both enabled and raised
@@ -296,7 +308,7 @@ void I2C0_IRQHandler(void)
       i2cn_nack_sm(&i2c0_sm);
   }
 
-  // handle RXDATA
+  // handle RXDATAV
   if(intflags & I2C_IF_RXDATAV)
   {
       i2cn_rxdata_sm(&i2c0_sm);
@@ -310,6 +322,13 @@ void I2C0_IRQHandler(void)
 }
 
 
+/***************************************************************************//**
+ * @brief
+ *  I2C1 peripheral IRQ Handler
+ *
+ * @details
+ *  Handles ACK, NACK, RXDATAV, and MSTOP interrupts
+ ******************************************************************************/
 void I2C1_IRQHandler(void)
 {
   // save flags that are both enabled and raised
@@ -344,6 +363,19 @@ void I2C1_IRQHandler(void)
 }
 
 
+/***************************************************************************//**
+ * @brief
+ *  I2C ACK state machine
+ *
+ * @details
+ *  State machine function for an ACK interrupt. Functionality depends on the
+ *  current state. Handles ACKs for the Request Resource, Command Transmit,
+ *  and Data Request states.
+ *
+ * @param[in] i2c_sm
+ *  Static state machine struct which corresponds to the desired I2Cn
+ *  peripheral
+ ******************************************************************************/
 void i2cn_ack_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
 {
   // make atomic by disallowing interrupts
@@ -378,6 +410,7 @@ void i2cn_ack_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
       break;
   }
 
+  // 80ms timer delay for RWM sync
   timer_delay(I2C_80MS_DELAY);
 
   // exit core critical to allow interrupts
@@ -385,6 +418,19 @@ void i2cn_ack_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
 }
 
 
+/***************************************************************************//**
+ * @brief
+ *  I2C NACK state machine
+ *
+ * @details
+ *  State machine function for a NACK interrupt. Functionality depends on the
+ *  current state. Handles NACKs for the Request Resource, Command Transmit,
+ *  and Data Request states.
+ *
+ * @param[in] i2c_sm
+ *  Static state machine struct which corresponds to the desired I2Cn
+ *  peripheral
+ ******************************************************************************/
 void i2cn_nack_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
 {
   // make atomic by disallowing interrupts
@@ -418,6 +464,7 @@ void i2cn_nack_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
       EFM_ASSERT(false);
   }
 
+  // 80ms timer delay for RWM sync
   timer_delay(I2C_80MS_DELAY);
 
   // exit core critical to allow interrupts
@@ -425,6 +472,18 @@ void i2cn_nack_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
 }
 
 
+/***************************************************************************//**
+ * @brief
+ *  I2C RXDATA state machine
+ *
+ * @details
+ *  State machine function for an RXDATAV interrupt. Functionality depends
+ *  on the current state. Handles RXDATAVs for the Data Request state
+ *
+ * @param[in] i2c_sm
+ *  Static state machine struct which corresponds to the desired I2Cn
+ *  peripheral
+ ******************************************************************************/
 void i2cn_rxdata_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
 {
   // make atomic by disallowing interrupts
@@ -464,6 +523,7 @@ void i2cn_rxdata_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
       break;
   }
 
+  // 80ms timer delay for RWM sync
   timer_delay(I2C_80MS_DELAY);
 
   // exit core critical to allow interrupts
@@ -471,6 +531,20 @@ void i2cn_rxdata_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
 }
 
 
+/***************************************************************************//**
+ * @brief
+ *  I2C MSTOP state machine
+ *
+ * @details
+ *  State machine function for an MSTOP. Functionality depends on the
+ *  current state. Handles MSTOPs for the MSTOP state. Since this is the
+ *  end of an I2C transaction this function also releases the bus, unblocks
+ *  EM2, and schedules the Humidity Read callback event.
+ *
+ * @param[in] i2c_sm
+ *  Static state machine struct which corresponds to the desired I2Cn
+ *  peripheral
+ ******************************************************************************/
 void i2cn_mstop_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
 {
   // make atomic by disallowing interrupts
@@ -493,6 +567,7 @@ void i2cn_mstop_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
       EFM_ASSERT(false);
   }
 
+  // 80ms timer delay for RWM sync
   timer_delay(I2C_80MS_DELAY);
 
   // exit core critical to allow interrupts
