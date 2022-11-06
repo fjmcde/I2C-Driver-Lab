@@ -196,6 +196,10 @@ void i2c_start(I2C_TypeDef *i2c, uint32_t slave_addr, uint32_t r_w,
   // The I2C peripheral cannot cannot go below EM1
   sleep_block_mode(I2C_EM_BLOCK);
 
+  // make atomic by disallowing interrupts
+  CORE_DECLARE_IRQ_STATE;
+  CORE_ENTER_CRITICAL();
+
   // if starting the I2C0 peripheral ...
   if(i2c == I2C0)
   {
@@ -267,6 +271,9 @@ void i2c_start(I2C_TypeDef *i2c, uint32_t slave_addr, uint32_t r_w,
       i2c1_sm.tx_cmd = (slave_addr << I2C_ADDR_RW_SHIFT) | r_w;
       *i2c1_sm.txdata = i2c1_sm.tx_cmd;
   }
+
+  // exit core critical to allow interrupts
+  CORE_EXIT_CRITICAL();
 }
 
 void I2C0_IRQHandler(void)
@@ -302,6 +309,7 @@ void I2C0_IRQHandler(void)
   }
 }
 
+
 void I2C1_IRQHandler(void)
 {
   // save flags that are both enabled and raised
@@ -335,8 +343,13 @@ void I2C1_IRQHandler(void)
     }
 }
 
+
 void i2cn_ack_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
 {
+  // make atomic by disallowing interrupts
+  CORE_DECLARE_IRQ_STATE;
+  CORE_ENTER_CRITICAL();
+
   switch(i2c_sm->curr_state)
   {
     case req_res:
@@ -364,10 +377,20 @@ void i2cn_ack_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
       EFM_ASSERT(false);
       break;
   }
+
+  timer_delay(I2C_80MS_DELAY);
+
+  // exit core critical to allow interrupts
+  CORE_EXIT_CRITICAL();
 }
+
 
 void i2cn_nack_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
 {
+  // make atomic by disallowing interrupts
+  CORE_DECLARE_IRQ_STATE;
+  CORE_ENTER_CRITICAL();
+
   switch(i2c_sm->curr_state)
   {
     case req_res:
@@ -394,10 +417,20 @@ void i2cn_nack_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
     default:
       EFM_ASSERT(false);
   }
+
+  timer_delay(I2C_80MS_DELAY);
+
+  // exit core critical to allow interrupts
+  CORE_EXIT_CRITICAL();
 }
+
 
 void i2cn_rxdata_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
 {
+  // make atomic by disallowing interrupts
+  CORE_DECLARE_IRQ_STATE;
+  CORE_ENTER_CRITICAL();
+
   switch(i2c_sm->curr_state)
   {
     case data_rx:
@@ -431,10 +464,19 @@ void i2cn_rxdata_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
       break;
   }
 
+  timer_delay(I2C_80MS_DELAY);
+
+  // exit core critical to allow interrupts
+  CORE_EXIT_CRITICAL();
 }
+
 
 void i2cn_mstop_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
 {
+  // make atomic by disallowing interrupts
+  CORE_DECLARE_IRQ_STATE;
+  CORE_ENTER_CRITICAL();
+
   switch(i2c_sm->curr_state)
   {
     case m_stop:
@@ -450,4 +492,9 @@ void i2cn_mstop_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
     default:
       EFM_ASSERT(false);
   }
+
+  timer_delay(I2C_80MS_DELAY);
+
+  // exit core critical to allow interrupts
+  CORE_EXIT_CRITICAL();
 }

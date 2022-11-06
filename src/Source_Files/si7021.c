@@ -95,8 +95,15 @@ void si7021_i2c_write(I2C_TypeDef *i2c, uint32_t si7021_cb)
 
 float si7021_calc_RH(void)
 {
+  // make atomic by disallowing interrupts
+  CORE_DECLARE_IRQ_STATE;
+  CORE_ENTER_CRITICAL();
+
   // convert the stored RH code to percent humidity (Si7021-A20: 5.1.1)
   float rh = ((125 * (float)read_result) / 65536) - 6;
+
+  // exit core critical to allow interrupts
+  CORE_EXIT_CRITICAL();
 
   return rh;
 }

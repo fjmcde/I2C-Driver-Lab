@@ -44,6 +44,8 @@
 #define READ_2_BYTES      2                           // number of bytes expected for a read
 // I2C Energy Modes
 #define I2C_EM_BLOCK      EM2                         // I2C Cannot go below EM2
+// Delays
+#define I2C_80MS_DELAY    80                          // 80ms Delay for user with Timer delay to avoid RMW sync issues
 
 //***********************************************************************************
 // enums

@@ -235,4 +235,6 @@ void scheduled_si7021_hum_read_cb(void)
 
   // convert measured value to relative humidity
   float rh = si7021_calc_RH();
+
+  printf("Humidity: %.2f \n", rh);
 }
