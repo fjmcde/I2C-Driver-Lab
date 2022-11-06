@@ -33,9 +33,10 @@
 #define LETIMER0_COMP0_CB   0x00000001                // 0b0000 0001
 #define LETIMER0_COMP1_CB   0x00000002                // 0b0000 0010
 #define LETIMER0_UF_CB      0x00000004                // 0b0000 0100
-#define GPIO_EVEN_IRQ_CB    0x40                      // 0b1000 0000; unique even bit for BTN0
-#define GPIO_ODD_IRQ_CB     0x80                      // 0b0100 0000; unique odd bit for BTN1
-#define SI7021_READ_CB      0x20                      // 0b0010 0000; unique read bit for Si7021
+#define GPIO_ODD_IRQ_CB     0x80                      // 0b1000 0000; unique odd bit for BTN1
+#define GPIO_EVEN_IRQ_CB    0x40                      // 0b0100 0000; unique even bit for BTN0
+#define SI7021_HUM_READ_CB  0x20                      // 0b0010 0000; unique read bit for Si7021 callback
+#define SI7021_WRITE_CB     0x10                      // 0b0001 0000; unique write bit for Si7021 callback
 
 //***********************************************************************************
 // enums
@@ -56,5 +57,6 @@ void scheduled_letimer0_comp0_cb(void);
 void scheduled_letimer0_comp1_cb(void);
 void scheduled_gpio_even_irq_cb(void);
 void scheduled_gpio_odd_irq_cb(void);
+void scheduled_si7021_hum_read_cb(void);
 
 #endif

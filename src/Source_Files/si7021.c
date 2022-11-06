@@ -19,6 +19,7 @@
 // static/private data
 //***********************************************************************************
 static volatile uint16_t read_result;
+static volatile uint16_t write_value;
 
 //***********************************************************************************
 // static/private functions
@@ -67,15 +68,35 @@ void si7021_i2c_open(I2C_TypeDef *i2c)
   app_i2c_open.scl_pen = I2C0_SCL_PEN;
   app_i2c_open.sda_pen = I2C0_SDA_PEN;
 
+
+
   // open I2C peripheral
   i2c_open(i2c, &app_i2c_open);
 
-  // start the I2C protocol (READ RH)
-  i2c_start(i2c, SI7021_ADDR, SI7021_I2C_WRITE, &read_result);
+  // ADDED HERE TO DEBUG; SHOULD BE CALLED FROM EITHER READ OR WRITE FUNCTION
+  i2c_start(i2c, SI7021_ADDR, SI7021_I2C_WRITE, &read_result, SI7021_HUM_READ_CB);
 }
 
 
-void si7021_i2c_read(void)
+void si7021_i2c_read(I2C_TypeDef *i2c, uint32_t si7021_cb)
 {
+  // start the I2C protocol (READ RH)
+  i2c_start(i2c, SI7021_ADDR, SI7021_I2C_WRITE, &read_result, si7021_cb);
+}
 
+
+void si7021_i2c_write(I2C_TypeDef *i2c, uint32_t si7021_cb)
+{
+  // start the I2C protocol (READ RH)
+  i2c_start(i2c, SI7021_ADDR, SI7021_I2C_READ, &write_value, si7021_cb);
+
+}
+
+
+float si7021_calc_RH(void)
+{
+  // convert the stored RH code to percent humidity (Si7021-A20: 5.1.1)
+  float rh = ((125 * (float)read_result) / 65536) - 6;
+
+  return rh;
 }

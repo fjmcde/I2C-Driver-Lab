@@ -78,7 +78,7 @@
 
 
 // System Clock setup
-#define MCU_HFXO_FREQ     cmuHFRCOFreq_32M0Hz   // Configure HFRC to 32MHz
+#define MCU_HFXO_FREQ     cmuHFRCOFreq_26M0Hz   // Configure HFRC to 26MHz
 
 
 // LETIMER PWM Configuration

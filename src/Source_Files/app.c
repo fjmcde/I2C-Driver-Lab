@@ -44,11 +44,12 @@ static void app_letimer_pwm_open(float period, float act_period,
 void app_peripheral_setup(void){
   cmu_open();
   gpio_open();
-  si7021_i2c_open(I2C0);
-  scheduler_open();
   sleep_open();
+  //si7021_i2c_read(I2C0, SI7021_HUM_READ_CB);
+  scheduler_open();
   app_letimer_pwm_open(PWM_PER, PWM_ACT_PER, PWM_ROUTE_0, PWM_ROUTE_1);
   letimer_start(LETIMER0, true);
+  si7021_i2c_open(I2C0);
 }
 
 
@@ -221,4 +222,17 @@ void scheduled_gpio_even_irq_cb(void)
       // ... else block EM4
       sleep_block_mode(EM4);
   }
+}
+
+
+void scheduled_si7021_hum_read_cb(void)
+{
+  // remove event from scheduler
+  remove_scheduled_event(SI7021_HUM_READ_CB);
+
+  // asset to ensure removed
+  EFM_ASSERT(!(get_scheduled_events() & SI7021_HUM_READ_CB));
+
+  // convert measured value to relative humidity
+  float rh = si7021_calc_RH();
 }

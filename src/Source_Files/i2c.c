@@ -21,6 +21,7 @@
 static volatile I2C_STATE_MACHINE_STRUCT i2c0_sm;
 static volatile I2C_STATE_MACHINE_STRUCT i2c1_sm;
 
+
 //***********************************************************************************
 // static/private functions
 //***********************************************************************************
@@ -29,6 +30,7 @@ static void i2cn_ack_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm);
 static void i2cn_nack_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm);
 static void i2cn_rxdata_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm);
 static void i2cn_mstop_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm);
+
 
 //***********************************************************************************
 // function definitions
@@ -75,7 +77,7 @@ void i2c_bus_reset(I2C_TypeDef *i2c)
   i2c->IFC |= I2C_IFC_MSTOP;
 
   // bus reset (TRM 16.3.12.2)
-  i2c->CMD = I2C_CMD_START | I2C_CMD_STOP;
+  i2c->CMD = (I2C_CMD_START | I2C_CMD_STOP);
 
   // ensure reset occurred properly
   while(!(i2c->IF & I2C_IF_MSTOP));
@@ -164,6 +166,8 @@ void i2c_open(I2C_TypeDef *i2c, I2C_OPEN_STRUCT *app_i2c_open)
   // enable pin route
   i2c->ROUTEPEN |= app_i2c_open->sda_pen;
   i2c->ROUTEPEN |= app_i2c_open->scl_pen;
+
+  i2c_bus_reset(i2c);
 }
 
 
@@ -186,8 +190,12 @@ void i2c_open(I2C_TypeDef *i2c, I2C_OPEN_STRUCT *app_i2c_open)
  * @param[in] app_i2c_open
  *  All data required to open the I2C peripheral encapsulated in struct
  ******************************************************************************/
-void i2c_start(I2C_TypeDef *i2c, uint32_t slave_addr, uint32_t r_w, volatile uint16_t *read_result)
+void i2c_start(I2C_TypeDef *i2c, uint32_t slave_addr, uint32_t r_w,
+               volatile uint16_t *read_result, uint32_t si7021_cb)
 {
+  // The I2C peripheral cannot cannot go below EM1
+  sleep_block_mode(I2C_EM_BLOCK);
+
   // if starting the I2C0 peripheral ...
   if(i2c == I2C0)
   {
@@ -196,9 +204,6 @@ void i2c_start(I2C_TypeDef *i2c, uint32_t slave_addr, uint32_t r_w, volatile uin
 
       // will trigger if a previous I2C operation has not completed
       EFM_ASSERT((I2C0->STATE & _I2C_STATE_STATE_MASK) == I2C_STATE_STATE_IDLE);
-
-      // The I2C peripheral cannot cannot go below EM2
-      sleep_block_mode(I2C_EM_BLOCK);
 
       // set busy bit
       i2c0_sm.busy = I2C_BUS_BUSY;
@@ -212,17 +217,21 @@ void i2c_start(I2C_TypeDef *i2c, uint32_t slave_addr, uint32_t r_w, volatile uin
       i2c0_sm.rxdata = &i2c0_sm.I2Cn->RXDATA;
       i2c0_sm.txdata = &i2c0_sm.I2Cn->TXDATA;
       i2c0_sm.data = read_result;
+      i2c0_sm.i2c_cb = si7021_cb;
 
       // enable interrupts
-      i2c0_sm.I2Cn->IEN |= SI7021_I2C_IEN_MASK;
+      i2c0_sm.I2Cn->IEN = SI7021_I2C_IEN_MASK;
       NVIC_EnableIRQ(I2C0_IRQn);
 
       // start I2C0 peripheral
-      i2c0_sm.I2Cn->CMD |= I2C_CMD_START;
+      i2c0_sm.I2Cn->CMD = I2C_CMD_START;
 
       // send slave addr + write bit
       i2c0_sm.tx_cmd = (slave_addr << I2C_ADDR_RW_SHIFT) | i2c0_sm.r_w;
       *i2c0_sm.txdata = i2c0_sm.tx_cmd;
+
+
+      for(int i = 0; i < 250000; i++);
   }
 
   // if starting the I2C1 peripheral ...
@@ -234,12 +243,8 @@ void i2c_start(I2C_TypeDef *i2c, uint32_t slave_addr, uint32_t r_w, volatile uin
       // will trigger if a previous I2C operation has not completed
       EFM_ASSERT((I2C1->STATE & _I2C_STATE_STATE_MASK) == I2C_STATE_STATE_IDLE);
 
-      // The I2C peripheral cannot cannot go below EM2
-      sleep_block_mode(I2C_EM_BLOCK);
-
       // set busy bit
       i2c1_sm.busy = I2C_BUS_BUSY;
-
 
       // initialize static I2C1 state machine
       i2c1_sm.I2Cn = i2c;
@@ -249,16 +254,17 @@ void i2c_start(I2C_TypeDef *i2c, uint32_t slave_addr, uint32_t r_w, volatile uin
       i2c1_sm.rxdata = &i2c1_sm.I2Cn->RXDATA;
       i2c1_sm.txdata = &i2c1_sm.I2Cn->TXDATA;
       i2c1_sm.data = read_result;
+      i2c1_sm.i2c_cb = si7021_cb;
 
       // enable interrupts
-      i2c1_sm.I2Cn->IEN |= SI7021_I2C_IEN_MASK;
+      i2c1_sm.I2Cn->IEN = SI7021_I2C_IEN_MASK;
       NVIC_EnableIRQ(I2C1_IRQn);
 
       // start I2C1 peripheral
-      i2c1_sm.I2Cn->CMD |= I2C_CMD_START;
+      i2c1_sm.I2Cn->CMD = I2C_CMD_START;
 
       // send slave addr + write bit
-      i2c1_sm.tx_cmd = (slave_addr << I2C_ADDR_RW_SHIFT) | i2c0_sm.r_w;
+      i2c1_sm.tx_cmd = (slave_addr << I2C_ADDR_RW_SHIFT) | r_w;
       *i2c1_sm.txdata = i2c1_sm.tx_cmd;
   }
 }
@@ -269,13 +275,13 @@ void I2C0_IRQHandler(void)
   uint32_t intflags = (I2C0->IF & I2C0->IEN);
 
   // lower flags
-  I2C0->IFC |= _I2C_IFC_MASK;
+  I2C0->IFC = intflags;
 
   // handle ACK
   if(intflags & I2C_IF_ACK)
-    {
+  {
       i2cn_ack_sm(&i2c0_sm);
-    }
+  }
 
   // handle NACK
   if(intflags & I2C_IF_NACK)
@@ -302,7 +308,7 @@ void I2C1_IRQHandler(void)
     uint32_t intflags = (I2C1->IF & I2C1->IEN);
 
     // lower flags
-    I2C1->IFC |= _I2C_IFC_MASK;
+    I2C1->IFC = intflags;
 
     // handle ACK
     if(intflags & I2C_IF_ACK)
@@ -331,9 +337,6 @@ void I2C1_IRQHandler(void)
 
 void i2cn_ack_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
 {
-  // lower ACK interrupt flag
-  i2c_sm->I2Cn->IFC |= I2C_IFC_ACK;
-
   switch(i2c_sm->curr_state)
   {
     case req_res:
@@ -348,7 +351,7 @@ void i2cn_ack_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
       i2c_sm->curr_state = data_req;
 
       // send repeated start command
-      i2c_sm->I2Cn->CMD |= I2C_CMD_START;
+      i2c_sm->I2Cn->CMD = I2C_CMD_START;
 
       // send slave addr + read bit
       *i2c_sm->txdata = ((i2c_sm->slave_addr << I2C_ADDR_RW_SHIFT) | SI7021_I2C_READ);
@@ -365,28 +368,25 @@ void i2cn_ack_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
 
 void i2cn_nack_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
 {
-  // lower NACK interrupt flag
-  i2c_sm->I2Cn->IFC |= I2C_IFC_NACK;
-
   switch(i2c_sm->curr_state)
   {
     case req_res:
       // send repeated start command
-      i2c_sm->I2Cn->CMD |= I2C_CMD_START;
+      i2c_sm->I2Cn->CMD = I2C_CMD_START;
 
       // re-send slave addr + write bit
       *i2c_sm->txdata = (i2c_sm->slave_addr | SI7021_I2C_WRITE);
       break;
     case command_tx:
       // send CONT command
-      i2c_sm->I2Cn->CMD |= I2C_CMD_CONT;
+      i2c_sm->I2Cn->CMD = I2C_CMD_CONT;
 
       // re-send command to measure relative humidity (no hold master mode)
       *i2c_sm->txdata = (measure_RH_NHMM);
       break;
     case data_req:
       // re-send repeated start command
-      i2c_sm->I2Cn->CMD |= I2C_CMD_START;
+      i2c_sm->I2Cn->CMD = I2C_CMD_START;
 
       // re-send slave addr + read bit
       *i2c_sm->txdata = (i2c_sm->slave_addr | SI7021_I2C_READ);
@@ -411,18 +411,18 @@ void i2cn_rxdata_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
       if(i2c_sm->num_bytes > 0)
       {
           // send ACK
-          i2c_sm->I2Cn->CMD |= I2C_CMD_ACK;
+          i2c_sm->I2Cn->CMD = I2C_CMD_ACK;
       }
       else
       {
           // send NACK
-          i2c_sm->I2Cn->CMD |= I2C_CMD_NACK;
+          i2c_sm->I2Cn->CMD = I2C_CMD_NACK;
 
           // change state
           i2c_sm->curr_state = m_stop;
 
           //send STOP
-          i2c_sm->I2Cn->CMD |= I2C_CMD_STOP;
+          i2c_sm->I2Cn->CMD = I2C_CMD_STOP;
       }
 
       break;
@@ -435,15 +435,17 @@ void i2cn_rxdata_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
 
 void i2cn_mstop_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
 {
-  // clear MSTOP interrupt flag register
-  i2c_sm->I2Cn->IFC |= I2C_IFC_MSTOP;
-
   switch(i2c_sm->curr_state)
   {
     case m_stop:
+      // clear I2C State Machine busy bit
       i2c_sm->busy = I2C_BUS_READY;
-      sleep_block_mode(I2C_EM_BLOCK);
-      add_scheduled_event(SI7021_READ_CB);
+
+      // unblock sleep
+      sleep_unblock_mode(I2C_EM_BLOCK);
+
+      // schedule humidity read call back even
+      add_scheduled_event(SI7021_HUM_READ_CB);
       break;
     default:
       EFM_ASSERT(false);

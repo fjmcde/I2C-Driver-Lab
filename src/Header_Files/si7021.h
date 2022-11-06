@@ -26,7 +26,7 @@
 #define REFFREQ                0X00     // Set to zero to use I2C frequency
 #define SI7021_ADDR            0x40     // Si7021 peripheral device address
 #define SI7021_I2C_READ        0X01     // READ BIT = 1; Si7021 TRM 5.1
-#define SI7021_I2C_WRITE       0X00     // WRITE BIT = 1; Si7021 TRM 5.1
+#define SI7021_I2C_WRITE       0X00     // WRITE BIT = 0; Si7021 TRM 5.1
 #define SI7021_I2C_IEN_MASK    0x1E0    // Enable ACK, NACK, RXDATAV and MSTOP interrupt flags
 
 
@@ -63,6 +63,8 @@ typedef enum
 // function prototypes
 //***********************************************************************************
 void si7021_i2c_open(I2C_TypeDef *i2c);
-void si7021_i2c_read(void);
+void si7021_i2c_read(I2C_TypeDef *i2c, uint32_t si7021_cb);
+void si7021_i2c_write(I2C_TypeDef *i2c, uint32_t si7021_cb);
+float si7021_calc_RH(void);
 
 #endif

@@ -26,9 +26,15 @@
 //***********************************************************************************
 // defined macros
 //***********************************************************************************
-#define LETIMER_HZ		      1000			          // utilizing ULFRCO oscillator for LETIMERs
-#define LETIMER_EM          EM4                 // use ULFRCO, block energy mode 4
-#define LETIMER_CNT_RESET   0                   // LETIMER counter reset value
+#define LETIMER_HZ		      1000      // utilizing ULFRCO oscillator for LETIMERs
+#define LETIMER_EM          EM4       // use ULFRCO, block energy mode 4
+#define LETIMER_CNT_RESET   0         // LETIMER counter reset value
+#define DEASSERT            0x00      // de-assert PWM idle values
+#define COMP0               0x00      // compare0 compare value
+#define COMP1               0x01      // compare1 compare value
+#define REP0                0x00      // repeat0 set value
+#define REP1                0x01      // repeat1 set value
+#define REP_PWM_MODE        0x01      // repeat set PWM mode
 
 
 //***********************************************************************************

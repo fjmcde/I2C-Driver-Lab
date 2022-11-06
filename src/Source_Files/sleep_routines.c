@@ -63,8 +63,15 @@ static int lowest_energy_mode[MAX_ENERGY_MODES];  // tracks the energy mode bloc
 ******************************************************************************/
 void sleep_open(void)
 {
+  // make atomic by disallowing interrupts
+  CORE_DECLARE_IRQ_STATE;
+  CORE_ENTER_CRITICAL();
+
   // reset array
   memset(lowest_energy_mode, EM0, sizeof(lowest_energy_mode));
+
+  // allow interrupts
+  CORE_EXIT_CRITICAL();
 }
 
 
@@ -86,7 +93,7 @@ void sleep_open(void)
 ******************************************************************************/
 void sleep_block_mode(uint32_t EM)
 {
-  // make atomic
+  // make atomic by disallowing interrupts
   CORE_DECLARE_IRQ_STATE;
   CORE_ENTER_CRITICAL();
 
@@ -128,11 +135,11 @@ void sleep_unblock_mode(uint32_t EM)
     lowest_energy_mode[EM]--;
   }
 
-  // allow interrupts
-  CORE_EXIT_CRITICAL();
-
   // if called, unblock sleep modes > block sleep modes; NOT GOOD
   EFM_ASSERT(lowest_energy_mode[EM] >= EM0);
+
+  // allow interrupts
+  CORE_EXIT_CRITICAL();
 }
 
 /***************************************************************************//**
@@ -154,11 +161,11 @@ void enter_sleep(void)
   CORE_ENTER_CRITICAL();
 
   // FSM
-  if(lowest_energy_mode[EM0] > EM0){ return; CORE_EXIT_CRITICAL();  }
-  else if(lowest_energy_mode[EM1] > EM0){ return; CORE_EXIT_CRITICAL(); }
-  else if(lowest_energy_mode[EM2] > EM0){ EMU_EnterEM1(); CORE_EXIT_CRITICAL();  return; }
-  else if(lowest_energy_mode[EM3] > EM0){ EMU_EnterEM2(true); CORE_EXIT_CRITICAL();  return; }
-  else{ EMU_EnterEM3(true); CORE_EXIT_CRITICAL(); return; }
+  if(lowest_energy_mode[EM0] > EM0){CORE_EXIT_CRITICAL(); return; }
+  else if(lowest_energy_mode[EM1] > EM0){ CORE_EXIT_CRITICAL(); return; }
+  else if(lowest_energy_mode[EM2] > EM0){ CORE_EXIT_CRITICAL(); EMU_EnterEM1(); return; }
+  else if(lowest_energy_mode[EM3] > EM0){ CORE_EXIT_CRITICAL(); EMU_EnterEM2(true); return; }
+  else{ CORE_EXIT_CRITICAL(); EMU_EnterEM3(true); return; }
 }
 
 
@@ -174,9 +181,15 @@ void enter_sleep(void)
 ******************************************************************************/
 uint32_t current_block_energy_mode(void)
 {
-  if(lowest_energy_mode[EM0] != EM0){ return EM0; }
-  else if(lowest_energy_mode[EM1] != EM0){ return EM1; }
-  else if(lowest_energy_mode[EM2] != EM0){ return EM2; }
-  else if(lowest_energy_mode[EM3] != EM0){ return EM3; }
-  else{ return EM4;}
+  // make atomic by disallowing interrupts
+  CORE_DECLARE_IRQ_STATE;
+  CORE_ENTER_CRITICAL();
+
+  // must call CORE_EXIT_CRITICAL after accessing/updating static data
+  // but before returning. Otherwise
+  if(lowest_energy_mode[EM0] != EM0){ CORE_EXIT_CRITICAL(); return EM0; }
+  else if(lowest_energy_mode[EM1] != EM0){ CORE_EXIT_CRITICAL(); return EM1; }
+  else if(lowest_energy_mode[EM2] != EM0){ CORE_EXIT_CRITICAL(); return EM2; }
+  else if(lowest_energy_mode[EM3] != EM0){ CORE_EXIT_CRITICAL(); return EM3; }
+  else{ CORE_EXIT_CRITICAL(); return EM4;}
 }

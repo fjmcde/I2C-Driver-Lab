@@ -16,17 +16,6 @@
 
 
 //***********************************************************************************
-// defined macros
-//***********************************************************************************
-#define DEASSERT            0x00     // de-assert PWM idle values
-#define COMP0               0x00     // compare0 compare value
-#define COMP1               0x01     // compare1 compare value
-#define REP0                0x00     // repeat0 set value
-#define REP1                0x01     // repeat1 set value
-#define REP_PWM_MODE        0x01     // repeat set PWM mode
-
-
-//***********************************************************************************
 // static/private data
 //***********************************************************************************
 static uint32_t scheduled_comp0_cb;   // scheduled compare0 call back
