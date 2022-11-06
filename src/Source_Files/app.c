@@ -4,7 +4,7 @@
  * @author
  *   Frank McDermott
  * @date
- *   10/04/2022
+ *   11/06/2022
  * @brief
  *   Driver to configure application-specific peripherals
  ******************************************************************************/
@@ -112,6 +112,7 @@ void scheduled_letimer0_uf_cb(void)
   remove_scheduled_event(LETIMER0_UF_CB);
   EFM_ASSERT(!(get_scheduled_events() & LETIMER0_UF_CB));
 }
+
 
 /***************************************************************************//**
  * @brief
@@ -225,6 +226,16 @@ void scheduled_gpio_even_irq_cb(void)
 }
 
 
+/***************************************************************************//**
+ * @brief
+ *   Handles the scheduling of Si7021 humidity read callback
+ *
+ * @details
+ *  Removes the triggering event from the scheduler and calculates relative
+ *  humidity from the stored Si7021's measurement code.
+ *
+ *  NOTE: Print to console not working.
+ ******************************************************************************/
 void scheduled_si7021_hum_read_cb(void)
 {
   // remove event from scheduler

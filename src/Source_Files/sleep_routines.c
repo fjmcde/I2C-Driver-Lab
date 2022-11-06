@@ -177,7 +177,6 @@ void enter_sleep(void)
  *   Function that returns which energy mode that the current system cannot
  *   enter, the first non-zero array element in lowest_energy_mode[]. Default
  *   blocked energy mode is EM4.
- *
 ******************************************************************************/
 uint32_t current_block_energy_mode(void)
 {

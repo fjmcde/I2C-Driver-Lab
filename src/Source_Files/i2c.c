@@ -4,7 +4,7 @@
  * @author
  *   Frank McDermott
  * @date
- *   10/11/2022
+ *   11/06/2022
  * @brief
  *   I2C source file for use with the Si7021 Temperature & Humidity Sensor
  ******************************************************************************/
@@ -37,7 +37,7 @@ static void i2cn_mstop_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm);
 //***********************************************************************************
 /***************************************************************************//**
  * @brief
- *  Resets the I2C Bus [NOT YET IN USE]
+ *  Resets the I2C Bus
  *
  * @details
  *  A reset is achieved by aborting any current operations on the I2C bus to
@@ -49,7 +49,6 @@ static void i2cn_mstop_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm);
  * @param[in] i2c
  *  Desired I2Cn peripheral (either I2C0 or I2C1)
  ******************************************************************************/
-// TODO: use in I2C state machine, not yet developed
 void i2c_bus_reset(I2C_TypeDef *i2c)
 {
   // local variable to save the state of the IEN register
