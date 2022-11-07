@@ -66,7 +66,7 @@ void letimer_pwm_open(LETIMER_TypeDef *letimer, APP_LETIMER_PWM_TypeDef *app_let
 	CMU_ClockEnable(cmuClock_LETIMER0, true);
 
 	// start letimer
-	letimer->CMD |= LETIMER_CMD_START;
+	letimer->CMD = LETIMER_CMD_START;
 
 	// wait for CMD register to sync
 	while (letimer->SYNCBUSY);

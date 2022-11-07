@@ -29,7 +29,7 @@
 // static/private functions
 //***********************************************************************************
 static void app_letimer_pwm_open(float period, float act_period,
-                                 uint32_t out0_route, uint32_t out1_route);
+                                 uint32_t out0_route, uint32_t out1_route, bool out_en);
 
 //***********************************************************************************
 // function definitions
@@ -46,10 +46,9 @@ void app_peripheral_setup(void){
   gpio_open();
   sleep_open();
   scheduler_open();
-  app_letimer_pwm_open(PWM_PER, PWM_ACT_PER, PWM_ROUTE_0, PWM_ROUTE_1);
-  letimer_start(LETIMER0, true);
-  si7021_i2c_open(I2C0);
-  si7021_i2c_read(I2C0, SI7021_HUM_READ_CB);
+  app_letimer_pwm_open(PWM_PER, PWM_ACT_PER, PWM_ROUTE_0, PWM_ROUTE_1, false);
+  letimer_start(LETIMER0, false);
+  si7021_i2c_open(APP_I2Cn);
 }
 
 
@@ -73,14 +72,14 @@ void app_peripheral_setup(void){
  *    out1 route to gpio port/pin
  *
  ******************************************************************************/
-void app_letimer_pwm_open(float period, float act_period, uint32_t out0_route, uint32_t out1_route)
+void app_letimer_pwm_open(float period, float act_period, uint32_t out0_route, uint32_t out1_route, bool out_en)
 {
   // instantiate an APP_LETIMER_PWM_TypeDef struct
   APP_LETIMER_PWM_TypeDef letimer_pwm;
 
   // configure struct
   letimer_pwm.debugRun = false;
-  letimer_pwm.enable = false;
+  letimer_pwm.enable = out_en;
   letimer_pwm.out_pin_route0 = out0_route;
   letimer_pwm.out_pin_route1 = out1_route;
   letimer_pwm.out_pin_0_en = true;
@@ -109,8 +108,11 @@ void app_letimer_pwm_open(float period, float act_period, uint32_t out0_route, u
  ******************************************************************************/
 void scheduled_letimer0_uf_cb(void)
 {
+  // remove LETIMER0 underflow callback even from scheduler
   remove_scheduled_event(LETIMER0_UF_CB);
-  EFM_ASSERT(!(get_scheduled_events() & LETIMER0_UF_CB));
+
+  // read relative humidity using Si7021
+  si7021_i2c_read(APP_I2Cn, SI7021_HUM_READ_CB);
 }
 
 
@@ -233,8 +235,6 @@ void scheduled_gpio_even_irq_cb(void)
  * @details
  *  Removes the triggering event from the scheduler and calculates relative
  *  humidity from the stored Si7021's measurement code.
- *
- *  NOTE: Print to console not working.
  ******************************************************************************/
 void scheduled_si7021_hum_read_cb(void)
 {
@@ -247,5 +247,15 @@ void scheduled_si7021_hum_read_cb(void)
   // convert measured value to relative humidity
   float rh = si7021_calc_RH();
 
-  printf("Humidity: %.2f \n", rh);
+  // if relative humidity is greater than 30.0%...
+  if(rh >= RH_LED_ON)
+  {
+      // ... Assert LED1
+      GPIO_PinOutSet(LED1_PORT, LED1_PIN);
+  }
+  else
+  {
+      // De-assert LED1
+      GPIO_PinOutClear(LED0_PORT, LED0_PIN);
+  }
 }

@@ -166,6 +166,7 @@ void i2c_open(I2C_TypeDef *i2c, I2C_OPEN_STRUCT *app_i2c_open)
   i2c->ROUTEPEN |= app_i2c_open->sda_pen;
   i2c->ROUTEPEN |= app_i2c_open->scl_pen;
 
+  // reset the I2C bus
   i2c_bus_reset(i2c);
 }
 
@@ -254,6 +255,7 @@ void i2c_start(I2C_TypeDef *i2c, uint32_t slave_addr, uint32_t r_w,
       i2c1_sm.curr_state = req_res;
       i2c1_sm.slave_addr = slave_addr;
       i2c1_sm.r_w = r_w;
+      i2c1_sm.num_bytes = READ_2_BYTES;
       i2c1_sm.rxdata = &i2c1_sm.I2Cn->RXDATA;
       i2c1_sm.txdata = &i2c1_sm.I2Cn->TXDATA;
       i2c1_sm.data = read_result;
@@ -560,7 +562,7 @@ void i2cn_mstop_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
       sleep_unblock_mode(I2C_EM_BLOCK);
 
       // schedule humidity read call back even
-      add_scheduled_event(SI7021_HUM_READ_CB);
+      add_scheduled_event(i2c_sm->i2c_cb);
       break;
     default:
       EFM_ASSERT(false);

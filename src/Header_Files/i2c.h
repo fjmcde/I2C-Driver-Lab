@@ -23,11 +23,11 @@
 //***********************************************************************************
 // defined macros
 //***********************************************************************************
-// I2Cn SCL & SDA
-#define I2C0_SCL_ROUTE15  I2C_ROUTELOC0_SCLLOC_LOC15  // SCL PC11: route location #15 (TRM 6.3 pg 75)
-#define I2C0_SDA_ROUTE15  I2C_ROUTELOC0_SDALOC_LOC15  // SDA PC10: route location #15 (TRM 6.3 pg 78)
-#define I2C0_SCL_PEN      I2C_ROUTEPEN_SCLPEN         // SCL PEN is bit 1 (TRM: 16.5.18)
-#define I2C0_SDA_PEN      I2C_ROUTEPEN_SDAPEN         // SDA PEN is bit 2 (TRM 16.5.18)
+// I2C route configuration
+#define I2C_SCL_ROUTE    APP_I2Cn_SCL_ROUTE          // SCL PC11: route location #15 (TRM 6.3 pg 75)
+#define I2C_SDA_ROUTE    APP_I2Cn_SDA_ROUTE          // SDA PC10: route location #15 (TRM 6.3 pg 78)
+#define I2C_SCL_PEN      I2C_ROUTEPEN_SCLPEN         // SCL PEN is bit 1 (TRM: 16.5.18)
+#define I2C_SDA_PEN      I2C_ROUTEPEN_SDAPEN         // SDA PEN is bit 2 (TRM 16.5.18)
 // I2Cn Clock
 #define I2C_FREQ          I2C_FREQ_FAST_MAX           // Max I2C frequency is 4kHz (EFM32PG12 DS 4.1.20.2 & Si7021-A20 DS Table 3)
 #define I2C_CLHR_6_3      i2cClockHLRAsymetric        // IC2 CLHR 6:3 (TRM 16.5.1 & EFM32PG12 HAL I2C_ClockHLR_TypeDef enumeration)
@@ -83,7 +83,7 @@ typedef struct
     uint32_t                      slave_addr;             // pointer to the address of slave device currently being communicated with
     volatile uint32_t             tx_cmd;                 // transmit command register
     uint32_t                      r_w;                    // set read/write bit
-    bool                          busy;                   // True when bus is busy; False when bus is available
+    volatile bool                 busy;                   // True when bus is busy; False when bus is available
     volatile const uint32_t      *rxdata;                 // pointer to receiver buffer address
     volatile uint32_t            *txdata;                 // pointer to transmit buffer address
     volatile uint16_t            *data;                   // store state machine received/transmit data
