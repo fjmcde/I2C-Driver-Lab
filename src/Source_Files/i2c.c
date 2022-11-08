@@ -563,6 +563,9 @@ void i2cn_mstop_sm(volatile I2C_STATE_MACHINE_STRUCT *i2c_sm)
 
       // schedule humidity read call back even
       add_scheduled_event(i2c_sm->i2c_cb);
+
+      // reset the I2C bus
+      i2c_bus_reset(i2c_sm->I2Cn);
       break;
     default:
       EFM_ASSERT(false);

@@ -88,6 +88,16 @@ void si7021_i2c_open(I2C_TypeDef *i2c)
  ******************************************************************************/
 void si7021_i2c_read(I2C_TypeDef *i2c, uint32_t si7021_cb)
 {
+  CORE_DECLARE_IRQ_STATE;
+  CORE_ENTER_CRITICAL();
+
+  // reset read_result
+  read_result = RESET_READ_RESULT;
+
+  // exit core critical to allow interrupts
+  CORE_EXIT_CRITICAL();
+
+
   // start the I2C protocol (READ RH)
   i2c_start(i2c, SI7021_ADDR, SI7021_I2C_WRITE, &read_result, si7021_cb);
 }

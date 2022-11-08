@@ -29,7 +29,8 @@
 // static/private functions
 //***********************************************************************************
 static void app_letimer_pwm_open(float period, float act_period,
-                                 uint32_t out0_route, uint32_t out1_route, bool out_en);
+                                 uint32_t out0_route, uint32_t out1_route,
+                                 bool out0_en, bool out1_en, bool out_en);
 
 //***********************************************************************************
 // function definitions
@@ -46,8 +47,8 @@ void app_peripheral_setup(void){
   gpio_open();
   sleep_open();
   scheduler_open();
-  app_letimer_pwm_open(PWM_PER, PWM_ACT_PER, PWM_ROUTE_0, PWM_ROUTE_1, false);
-  letimer_start(LETIMER0, false);
+  app_letimer_pwm_open(PWM_PER, PWM_ACT_PER, PWM_ROUTE_0, PWM_ROUTE_1, false, false, true);
+  letimer_start(LETIMER0, true);
   si7021_i2c_open(APP_I2Cn);
 }
 
@@ -72,7 +73,9 @@ void app_peripheral_setup(void){
  *    out1 route to gpio port/pin
  *
  ******************************************************************************/
-void app_letimer_pwm_open(float period, float act_period, uint32_t out0_route, uint32_t out1_route, bool out_en)
+void app_letimer_pwm_open(float period, float act_period,
+                          uint32_t out0_route, uint32_t out1_route,
+                          bool out0_en, bool out1_en, bool out_en)
 {
   // instantiate an APP_LETIMER_PWM_TypeDef struct
   APP_LETIMER_PWM_TypeDef letimer_pwm;
@@ -82,8 +85,8 @@ void app_letimer_pwm_open(float period, float act_period, uint32_t out0_route, u
   letimer_pwm.enable = out_en;
   letimer_pwm.out_pin_route0 = out0_route;
   letimer_pwm.out_pin_route1 = out1_route;
-  letimer_pwm.out_pin_0_en = true;
-  letimer_pwm.out_pin_1_en = false;
+  letimer_pwm.out_pin_0_en = out0_en;
+  letimer_pwm.out_pin_1_en = out1_en;
   letimer_pwm.period = period;
   letimer_pwm.active_period = act_period;
   letimer_pwm.comp0_irq_enable = false;
@@ -256,6 +259,6 @@ void scheduled_si7021_hum_read_cb(void)
   else
   {
       // De-assert LED1
-      GPIO_PinOutClear(LED0_PORT, LED0_PIN);
+      GPIO_PinOutClear(LED1_PORT, LED1_PIN);
   }
 }
