@@ -191,7 +191,7 @@ void i2c_open(I2C_TypeDef *i2c, I2C_OPEN_STRUCT *app_i2c_open)
  * @param[in] app_i2c_open
  *  All data required to open the I2C peripheral encapsulated in struct
  ******************************************************************************/
-void i2c_start(I2C_TypeDef *i2c, uint32_t slave_addr, uint32_t r_w,
+void i2c_init_sm(I2C_TypeDef *i2c, uint32_t slave_addr, uint32_t r_w,
                volatile uint16_t *read_result, uint32_t si7021_cb)
 {
   // The I2C peripheral cannot cannot go below EM1

@@ -99,7 +99,7 @@ void si7021_i2c_read(I2C_TypeDef *i2c, uint32_t si7021_cb)
 
 
   // start the I2C protocol (READ RH)
-  i2c_start(i2c, SI7021_ADDR, SI7021_I2C_WRITE, &read_result, si7021_cb);
+  i2c_init_sm(i2c, SI7021_ADDR, SI7021_I2C_WRITE, &read_result, si7021_cb);
 }
 
 
@@ -119,7 +119,7 @@ void si7021_i2c_read(I2C_TypeDef *i2c, uint32_t si7021_cb)
 void si7021_i2c_write(I2C_TypeDef *i2c, uint32_t si7021_cb)
 {
   // start the I2C protocol (W)
-  i2c_start(i2c, SI7021_ADDR, SI7021_I2C_READ, &write_value, si7021_cb);
+  i2c_init_sm(i2c, SI7021_ADDR, SI7021_I2C_READ, &write_value, si7021_cb);
 
 }
 
